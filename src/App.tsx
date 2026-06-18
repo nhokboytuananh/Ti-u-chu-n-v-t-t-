@@ -79,9 +79,9 @@ export default function App() {
   const handleLogin = async () => {
     try {
       await signInWithPopup(auth, googleAuthProvider);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Login failed:", error);
-      alert("Đăng nhập thất bại");
+      alert(`Đăng nhập thất bại: ${error.message || error}`);
     }
   };
 

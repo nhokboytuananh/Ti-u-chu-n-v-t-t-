@@ -1,9 +1,8 @@
 {
-  "projectId": "inspired-genius-psx2c",
-  "appId": "1:518301877137:web:47af70027962abb9745030",
-  "apiKey": "AIzaSyCTzvzefsm7iRl1AskAp9yFLFo6_gk5yuo",
-  "authDomain": "inspired-genius-psx2c.firebaseapp.com",
-  "storageBucket": "inspired-genius-psx2c.firebasestorage.app",
-  "messagingSenderId": "518301877137",
-  "measurementId": ""
+  "projectId": "quan-ly-vat-tu-ef0ca",
+  "appId": "1:434594401905:web:582c52b6070c3c5cbb55d0",
+  "apiKey": "AIzaSyB1FG6sXoeU4uCVBe_pSD5pgeI3ykcgyuw",
+  "authDomain": "quan-ly-vat-tu-ef0ca.firebaseapp.com",
+  "storageBucket": "quan-ly-vat-tu-ef0ca.firebasestorage.app",
+  "messagingSenderId": "434594401905"
 }
