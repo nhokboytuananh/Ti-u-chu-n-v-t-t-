@@ -1,0 +1,24 @@
+@import "tailwindcss";
+
+@layer utilities {
+  .word-editor-content p, .word-editor-content div {
+    margin-top: 1pt;
+    margin-bottom: 1pt;
+    text-align: justify;
+  }
+  
+  .word-editor-content table {
+    margin-top: 4pt;
+    margin-bottom: 4pt;
+  }
+  
+  .word-editor-content table th, .word-editor-content table td {
+    padding: 0;
+    background-color: transparent !important;
+  }
+  
+  .word-editor-content * {
+    line-height: calc(1em + 1pt);
+  }
+}
+
