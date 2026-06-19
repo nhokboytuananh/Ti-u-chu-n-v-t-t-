@@ -17,12 +17,19 @@ async function initDb() {
         name TEXT NOT NULL,
         content TEXT NOT NULL,
         notes TEXT,
-        excel_data JSONB NOT NULL,
-        images JSONB NOT NULL,
+        excel_data JSONB NOT NULL DEFAULT '{"data": [], "merges": [], "tags": {}}'::jsonb,
+        images JSONB NOT NULL DEFAULT '[]'::jsonb,
         created_at TIMESTAMP NOT NULL DEFAULT NOW(),
         updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
         updated_by TEXT
       );
+    `);
+    
+    // Add missing columns if table already existed from older versions
+    await db.execute(`
+      ALTER TABLE materials
+      ADD COLUMN IF NOT EXISTS excel_data JSONB NOT NULL DEFAULT '{"data": [], "merges": [], "tags": {}}'::jsonb,
+      ADD COLUMN IF NOT EXISTS images JSONB NOT NULL DEFAULT '[]'::jsonb;
     `);
     await db.execute(`
       CREATE TABLE IF NOT EXISTS material_audit_logs (
