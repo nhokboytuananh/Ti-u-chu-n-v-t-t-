@@ -412,6 +412,15 @@ export default function App() {
                     </div>
                   )}
                 </div>
+                {deleteMaterialId === mat.id && (
+                  <div className="mt-2 text-xs text-red-600 bg-red-50 p-2 rounded flex items-center justify-between" onClick={e => e.stopPropagation()}>
+                    <span>Bạn có chắc xóa?</span>
+                    <div className="flex gap-2">
+                       <button onClick={(e) => { e.stopPropagation(); setDeleteMaterialId(null); }} className="hover:underline text-gray-500">Hủy</button>
+                       <button onClick={(e) => { e.stopPropagation(); confirmDeleteMaterial(); }} className="hover:underline font-bold text-red-600">Xác nhận</button>
+                    </div>
+                  </div>
+                )}
               </div>
             ))
           )}
@@ -670,34 +679,6 @@ export default function App() {
           )}
         </main>
       </div>
-
-      {/* Delete Confirmation Modal for Material */}
-      {deleteMaterialId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            <div className="p-5">
-              <h3 className="text-lg font-bold text-gray-900 mb-2">Xóa vật tư</h3>
-              <p className="text-sm text-gray-500">
-                Bạn có chắc chắn muốn xóa vật tư này không? Hành động này không thể hoàn tác.
-              </p>
-            </div>
-            <div className="bg-gray-50 px-5 py-4 flex items-center justify-end gap-3 border-t border-gray-100">
-              <button
-                onClick={() => setDeleteMaterialId(null)}
-                className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                Hủy bỏ
-              </button>
-              <button
-                onClick={confirmDeleteMaterial}
-                className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg shadow-sm transition-colors"
-              >
-                Xác nhận xóa
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Login Modal */}
       {showLoginModal && (
