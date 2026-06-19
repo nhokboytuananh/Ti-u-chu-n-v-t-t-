@@ -253,6 +253,25 @@ export default function App() {
     }
   };
 
+  const handleCancelEdit = () => {
+    const existing = savedMaterials.find(m => m.id === currentId);
+    if (existing) {
+      loadMaterialForView(existing);
+    } else {
+      setCode('');
+      setName('');
+      setRichText('');
+      setExcelData([]);
+      setExcelMerges([]);
+      setRowTags({});
+      setImages([]);
+      setNotes('');
+      setCodeError('');
+      setNameError('');
+      setIsEditing(false);
+    }
+  };
+
   const loadMaterialForView = (material: Material) => {
     setCurrentId(material.id);
     setCode(material.code);
@@ -444,7 +463,7 @@ export default function App() {
                 <ClipboardList size={22} />
               </div>
               <div className="hidden sm:block">
-                <h1 className="text-lg sm:text-xl font-bold tracking-tight text-gray-900 leading-none truncate pr-2">Tiêu chuẩn Kỹ thuật Vật tư</h1>
+                <h1 className="text-lg sm:text-xl font-bold tracking-tight text-gray-900 leading-none truncate pr-2">Tiêu chuẩn Kỹ thuật</h1>
               </div>
             </div>
             <div className="flex flex-col sm:flex-row items-center gap-2 shrink-0">
@@ -502,6 +521,15 @@ export default function App() {
                     <><Edit2 size={18} /> Chỉnh sửa</>
                   )}
                 </button>
+                {isEditing && (
+                  <button 
+                    type="button"
+                    onClick={handleCancelEdit}
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 transition-all shadow-sm focus:ring-2 focus:ring-gray-200 focus:outline-none"
+                  >
+                    <X size={18} /> Hủy
+                  </button>
+                )}
               </div>
             )}
             
