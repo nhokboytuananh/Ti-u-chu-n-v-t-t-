@@ -220,10 +220,10 @@ export function PackageBuilder({ savedMaterials, savedPackages, setSavedPackages
 
     selectedMaterials.forEach((mat, index) => {
       contentHtml += `<div class="material-section">`;
-      contentHtml += `<h2>${index + 1}. ${mat.name || 'Vật tư chưa có tên'}</h2>`;
+      contentHtml += `<h2>II.${index + 1}. ${mat.name || 'Vật tư chưa có tên'}</h2>`;
       
       if (mat.richText) {
-        contentHtml += `<div><strong>Yêu cầu chung:</strong></div>`;
+        contentHtml += `<div><strong>II.${index + 1}.1. Yêu cầu chung:</strong></div>`;
         const cleanedRichText = mat.richText
           .replace(/<ul[^>]*>/gi, '')
           .replace(/<\/ul>/gi, '')
@@ -237,7 +237,7 @@ export function PackageBuilder({ savedMaterials, savedPackages, setSavedPackages
       const { data: filteredData, merges: filteredMerges } = getFilteredExcelData(mat);
 
       if (filteredData && filteredData.length > 0) {
-        contentHtml += `<div style="margin-top: 15px;"><strong>Bảng thông số kỹ thuật:</strong></div>`;
+        contentHtml += `<div style="margin-top: 15px;"><strong>II.${index + 1}.2. Bảng thông số kỹ thuật:</strong></div>`;
         contentHtml += `<table border="1" cellpadding="0" cellspacing="0">`;
         filteredData.forEach((row, rIdx) => {
           contentHtml += `<tr>`;
