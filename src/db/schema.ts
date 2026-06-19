@@ -5,6 +5,7 @@ export const materials = pgTable("materials", {
   code: text("code").notNull(),
   name: text("name").notNull(),
   content: text("content").notNull(),
+  notes: text("notes"),
   excelData: jsonb("excel_data").notNull(),
   images: jsonb("images").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),

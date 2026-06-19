@@ -14,7 +14,7 @@ export function ImageUpload({ images, setImages, readOnly }: ImageUploadProps) {
     const files = event.target.files;
     if (!files) return;
 
-    Array.from(files).forEach((file) => {
+    Array.from(files).forEach((file: File) => {
       if (!file.type.startsWith('image/')) return;
       
       const reader = new FileReader();

@@ -12,7 +12,7 @@ import { PackageBuilder } from './components/PackageBuilder';
 import { Material, BiddingPackage } from './types';
 import * as xlsx from 'xlsx';
 import { auth, googleAuthProvider } from './lib/firebase.ts';
-import { signInWithPopup, signOut, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
+import { signInWithPopup, signOut, onAuthStateChanged, User as FirebaseUser, GoogleAuthProvider } from 'firebase/auth';
 
 export default function App() {
   const [savedMaterials, setSavedMaterials] = useState<Material[]>([]);
@@ -20,9 +20,11 @@ export default function App() {
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  const API_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL || '';
+
   const fetchMaterials = async () => {
     try {
-      const res = await fetch('/api/materials');
+      const res = await fetch(`${API_BASE_URL}/api/materials`);
       if (res.ok) {
         const data = await res.json();
         const mapped = data.map((d: any) => ({
@@ -45,7 +47,7 @@ export default function App() {
 
   const fetchPackages = async () => {
     try {
-      const res = await fetch('/api/packages');
+      const res = await fetch(`${API_BASE_URL}/api/packages`);
       if (res.ok) {
         const data = await res.json();
         setSavedPackages(data);
@@ -59,7 +61,7 @@ export default function App() {
     fetchMaterials();
     fetchPackages();
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      const allowedEmails = import.meta.env.VITE_ALLOWED_EMAILS;
+      const allowedEmails = (import.meta as any).env.VITE_ALLOWED_EMAILS;
       if (currentUser && currentUser.email && allowedEmails && allowedEmails.trim() !== '') {
         const emailList = allowedEmails.split(',').map((e: string) => e.trim().toLowerCase());
         if (!emailList.includes(currentUser.email.toLowerCase())) {
@@ -197,7 +199,7 @@ export default function App() {
     
     try {
       const token = await user.getIdToken();
-      const res = await fetch('/api/materials', {
+      const res = await fetch(`${API_BASE_URL}/api/materials`, {
          method: 'POST',
          headers: {
             'Content-Type': 'application/json',
@@ -274,7 +276,7 @@ export default function App() {
     if (deleteMaterialId && user) {
       try {
         const token = await user.getIdToken();
-        const res = await fetch(`/api/materials/${deleteMaterialId}`, {
+        const res = await fetch(`${API_BASE_URL}/api/materials/${deleteMaterialId}`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${token}`
@@ -381,6 +383,8 @@ export default function App() {
             ))
           )}
         </div>
+
+
       </aside>
 
       {/* Main Content */}

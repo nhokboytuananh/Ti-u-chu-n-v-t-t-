@@ -68,7 +68,8 @@ export function PackageBuilder({ savedMaterials, savedPackages, setSavedPackages
       try {
         const { auth } = await import('../lib/firebase.ts');
         const token = await auth.currentUser?.getIdToken();
-        const res = await fetch('/api/packages', {
+        const API_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL || '';
+        const res = await fetch(`${API_BASE_URL}/api/packages`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -127,7 +128,8 @@ export function PackageBuilder({ savedMaterials, savedPackages, setSavedPackages
       try {
         const { auth } = await import('../lib/firebase.ts');
         const token = await auth.currentUser?.getIdToken();
-        const res = await fetch(`/api/packages/${deletePackageId}`, {
+        const API_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL || '';
+        const res = await fetch(`${API_BASE_URL}/api/packages/${deletePackageId}`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${token}`
@@ -360,6 +362,8 @@ export function PackageBuilder({ savedMaterials, savedPackages, setSavedPackages
     const data = new Blob([buffer], { type: 'application/octet-stream' });
     saveAs(data, `${packageName || 'Bang_Thong_So_Goi_Thau'}.xlsx`);
   };
+
+
 
   const filteredMaterials = savedMaterials
     .filter(m => 

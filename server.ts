@@ -28,12 +28,13 @@ async function startServer() {
   // Admin API to save materials
   app.post("/api/materials", requireAuth, async (req: AuthRequest, res) => {
     try {
-      const { id, code, name, content, excelData, images } = req.body;
+      const { id, code, name, content, excelData, images, notes } = req.body;
       const data = await db.insert(materials).values({
         id,
         code,
         name,
         content,
+        notes,
         excelData: excelData || [],
         images: images || [],
       }).onConflictDoUpdate({
@@ -42,6 +43,7 @@ async function startServer() {
           code,
           name,
           content,
+          notes,
           excelData: excelData || [],
           images: images || [],
         }
