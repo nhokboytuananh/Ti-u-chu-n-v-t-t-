@@ -9,6 +9,18 @@ export const materials = pgTable("materials", {
   excelData: jsonb("excel_data").notNull(),
   images: jsonb("images").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  updatedBy: text("updated_by"),
+});
+
+export const materialAuditLogs = pgTable("material_audit_logs", {
+  id: text("id").primaryKey(),
+  materialId: text("material_id").notNull(),
+  action: text("action").notNull(), // 'create', 'update'
+  previousData: jsonb("previous_data"),
+  newData: jsonb("new_data"),
+  updatedBy: text("updated_by"),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 export const packages = pgTable("packages", {

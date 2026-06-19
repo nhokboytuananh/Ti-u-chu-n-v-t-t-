@@ -2,10 +2,10 @@ import express from "express";
 import path from "path";
 import cors from "cors";
 import { createServer as createViteServer } from "vite";
-import { db } from "./src/db/index.ts";
-import { materials, materialAuditLogs, packages } from "./src/db/schema.ts";
+import { db } from "./src/db/index";
+import { materials, materialAuditLogs, packages } from "./src/db/schema";
 import { eq, desc } from "drizzle-orm";
-import { requireAuth, AuthRequest } from "./src/middleware/auth.ts";
+import { requireAuth, AuthRequest } from "./src/middleware/auth";
 import crypto from "crypto";
 
 async function initDb() {

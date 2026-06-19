@@ -10,6 +10,18 @@ export interface Material {
   rowTags?: Record<number, string>;
   images: { url: string; name: string }[];
   notes: string;
+  updatedBy?: string;
+  updatedAt?: string;
+}
+
+export interface MaterialAuditLog {
+  id: string;
+  materialId: string;
+  action: string;
+  previousData: any;
+  newData: any;
+  updatedBy: string;
+  updatedAt: string;
 }
 
 export interface BiddingPackage {
