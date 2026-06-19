@@ -20,7 +20,7 @@ export default function App() {
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const API_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL || '';
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
   const fetchMaterials = async () => {
     try {
@@ -36,7 +36,9 @@ export default function App() {
           excelMerges: d.excelData?.merges || [],
           rowTags: d.excelData?.tags || {},
           images: d.images || [],
-          notes: d.notes || ''
+          notes: d.notes || '',
+          updatedBy: d.updatedBy,
+          updatedAt: d.updatedAt
         }));
         setSavedMaterials(mapped);
       }
@@ -61,7 +63,7 @@ export default function App() {
     fetchMaterials();
     fetchPackages();
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      const allowedEmails = (import.meta as any).env.VITE_ALLOWED_EMAILS;
+      const allowedEmails = import.meta.env.VITE_ALLOWED_EMAILS;
       if (currentUser && currentUser.email && allowedEmails && allowedEmails.trim() !== '') {
         const emailList = allowedEmails.split(',').map((e: string) => e.trim().toLowerCase());
         if (!emailList.includes(currentUser.email.toLowerCase())) {
@@ -119,6 +121,11 @@ export default function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [searchSidebar, setSearchSidebar] = useState('');
   const [showLoginModal, setShowLoginModal] = useState(false);
+  
+  // Audit Logs
+  const [showAuditLogs, setShowAuditLogs] = useState(false);
+  const [auditLogsData, setAuditLogsData] = useState<any[]>([]);
+  const [loadingAuditLogs, setLoadingAuditLogs] = useState(false);
 
   const requireAuth = (callback: () => void) => {
     if (isAuthenticated) {
@@ -209,19 +216,23 @@ export default function App() {
       });
       if (!res.ok) throw new Error('Network error');
       
+      const resData = await res.json();
+      
       setSavedMaterials(prev => {
         const existingIdx = prev.findIndex(m => m.id === currentId);
         // Note: material from backend differs, mapping to frontend properties
         const fetchedMat: Material = {
-            id: newMaterial.id,
-            code: newMaterial.code,
-            name: newMaterial.name,
-            richText: newMaterial.content,
-            excelData: newMaterial.excelData.data,
-            excelMerges: newMaterial.excelData.merges,
-            rowTags: newMaterial.excelData.tags,
-            images: newMaterial.images,
-            notes: newMaterial.notes
+            id: resData.id,
+            code: resData.code,
+            name: resData.name,
+            richText: resData.content,
+            excelData: resData.excelData?.data || [],
+            excelMerges: resData.excelData?.merges || [],
+            rowTags: resData.excelData?.tags || {},
+            images: resData.images || [],
+            notes: resData.notes || '',
+            updatedBy: resData.updatedBy,
+            updatedAt: resData.updatedAt
         };
         if (existingIdx >= 0) {
           const copy = [...prev];
@@ -293,6 +304,25 @@ export default function App() {
         alert('Lỗi xóa vật tư');
       }
     }
+  };
+
+  const handleOpenAuditLogs = async (matId: string, e?: React.MouseEvent) => {
+     if(e) e.stopPropagation();
+     setShowAuditLogs(true);
+     setLoadingAuditLogs(true);
+     try {
+       const res = await fetch(`${API_BASE_URL}/api/materials/${matId}/audit-logs`);
+       if(res.ok) {
+         setAuditLogsData(await res.json());
+       } else {
+         setAuditLogsData([]);
+       }
+     } catch (err) {
+       console.error("Failed to load audit logs", err);
+       setAuditLogsData([]);
+     } finally {
+       setLoadingAuditLogs(false);
+     }
   };
 
   // Sort and filter alphabetically
@@ -515,6 +545,12 @@ export default function App() {
                        <Info className="text-blue-500" size={20} />
                        <h2 className="text-lg font-semibold text-gray-800">Thông tin cơ bản</h2>
                     </div>
+                    {savedMaterials.find(m => m.id === currentId)?.updatedAt && (
+                      <div className="flex items-center gap-2 text-sm text-gray-500">
+                        <span>Cập nhật lần cuối bởi <strong>{savedMaterials.find(m => m.id === currentId)?.updatedBy}</strong> lúc {new Date(savedMaterials.find(m => m.id === currentId)!.updatedAt!).toLocaleString('vi-VN')}</span>
+                        <button type="button" onClick={() => handleOpenAuditLogs(currentId)} className="text-blue-600 hover:text-blue-700 underline text-xs font-semibold ml-2">Xem lịch sử</button>
+                      </div>
+                    )}
                   </div>
                   <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
@@ -693,6 +729,48 @@ export default function App() {
       )}
 
       {/* Remove Password Change Modal as it is handled by Google */}
+      
+      {/* Audit Logs Modal */}
+      {showAuditLogs && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50">
+              <h3 className="text-lg font-bold text-gray-900">Lịch sử thay đổi vật tư</h3>
+              <button onClick={() => setShowAuditLogs(false)} className="text-gray-400 hover:text-gray-600 transition-colors">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-6 flex-1 overflow-y-auto bg-gray-50/50">
+              {loadingAuditLogs ? (
+                 <div className="flex justify-center p-8 text-gray-500">Đang tải dữ liệu...</div>
+              ) : auditLogsData.length === 0 ? (
+                 <div className="text-center p-8 text-gray-500">Không có dữ liệu lịch sử nào.</div>
+              ) : (
+                <div className="space-y-4">
+                  {auditLogsData.map((log) => (
+                     <div key={log.id} className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+                       <div className="flex justify-between items-start mb-2">
+                         <div className="flex gap-2 items-center">
+                            <span className={`text-xs font-bold uppercase px-2 py-1 rounded ${log.action === 'create' ? 'bg-emerald-100 text-emerald-700' : log.action === 'update' ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700'}`}>
+                               {log.action === 'create' ? 'Tạo mới' : log.action === 'update' ? 'Cập nhật' : 'Xóa'}
+                            </span>
+                            <span className="text-sm font-semibold text-gray-800">{log.updatedBy || 'Người dùng không xác định'}</span>
+                         </div>
+                         <span className="text-sm text-gray-500">{new Date(log.updatedAt).toLocaleString('vi-VN')}</span>
+                       </div>
+                       <div className="text-sm text-gray-600 mt-2 bg-gray-50 p-2 rounded max-h-40 overflow-y-auto font-mono text-xs border border-gray-100">
+                          <strong>Dữ liệu mới:</strong>
+                          <pre className="mt-1 whitespace-pre-wrap">{JSON.stringify(log.newData, null, 2)}</pre>
+                       </div>
+                     </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
