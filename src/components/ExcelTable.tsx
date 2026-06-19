@@ -318,15 +318,21 @@ export function ExcelTable({ tableData, setTableData, merges, setMerges, rowTags
 
     return (
       <div className="relative w-full h-full group/text">
-        <textarea
-          value={cell}
-          readOnly={readOnly}
-          onChange={(e) => handleCellChange(rowIndex, colIndex, e.target.value)}
-          onPaste={!readOnly ? (e) => handlePaste(rowIndex, colIndex, e) : undefined}
-          className={`w-full h-full p-2 bg-transparent outline-none transition-shadow ${readOnly ? 'resize-none' : 'focus:bg-white focus:ring-2 focus:ring-blue-500 resize-none'}`}
-          placeholder={readOnly ? '' : (isHeader ? `Cột ${colIndex + 1}` : '')}
-          style={{ fieldSizing: 'content', minHeight: '100%' } as any}
-        />
+        {readOnly ? (
+          <div className="w-full h-full p-2 whitespace-pre-wrap break-words text-gray-800">
+            {cell}
+          </div>
+        ) : (
+          <textarea
+            value={cell}
+            readOnly={readOnly}
+            onChange={(e) => handleCellChange(rowIndex, colIndex, e.target.value)}
+            onPaste={!readOnly ? (e) => handlePaste(rowIndex, colIndex, e) : undefined}
+            className="w-full h-full p-2 bg-transparent outline-none transition-shadow focus:bg-white focus:ring-2 focus:ring-blue-500 resize-none"
+            placeholder={isHeader ? `Cột ${colIndex + 1}` : ''}
+            style={{ fieldSizing: 'content', minHeight: '100%' } as any}
+          />
+        )}
         {!readOnly && !cell && (
           <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/text:opacity-100 transition-opacity pointer-events-none">
             <label className="cursor-pointer bg-gray-100 p-1.5 rounded hover:bg-gray-200 text-gray-500 pointer-events-auto" title="Chèn ảnh">
@@ -469,7 +475,7 @@ export function ExcelTable({ tableData, setTableData, merges, setMerges, rowTags
       )}
 
       <div className="overflow-x-auto p-1">
-        <table className="w-full text-left border-collapse min-w-max">
+        <table className={`w-full text-left border-collapse ${readOnly ? 'min-w-full' : 'min-w-max'}`}>
           <thead>
             {tableData.slice(0, 1).map((row, rowIndex) => (
               <tr key={rowIndex} className="bg-gray-100/50" style={{ height: rowHeights[rowIndex] || undefined }}>
@@ -478,7 +484,7 @@ export function ExcelTable({ tableData, setTableData, merges, setMerges, rowTags
                   if (hideCell) return null;
                   
                   return (
-                  <th key={colIndex} rowSpan={rowSpan} colSpan={colSpan} className="p-0 border border-gray-300 font-semibold text-gray-700 relative group bg-gray-50 align-top h-[1px]" style={{ width: colWidths[colIndex] || (colIndex === 0 ? 150 : undefined), minWidth: colWidths[colIndex] || 150 }}>
+                  <th key={colIndex} rowSpan={rowSpan} colSpan={colSpan} className="p-0 border border-gray-300 font-semibold text-gray-700 relative group bg-gray-50 align-top h-[1px]" style={{ width: colWidths[colIndex] || (!readOnly && colIndex === 0 ? 150 : undefined), minWidth: colWidths[colIndex] || (!readOnly ? 150 : undefined) }}>
                     {!readOnly && (
                       <>
                         <div
