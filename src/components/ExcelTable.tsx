@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import * as xlsx from 'xlsx';
-import { Upload, Plus, Trash2 } from 'lucide-react';
+import { Upload, Plus, Trash2, Image as ImageIcon, X, ZoomIn, ClipboardList } from 'lucide-react';
 
 interface ExcelTableProps {
   tableData: string[][];
@@ -14,6 +14,61 @@ interface ExcelTableProps {
 
 export function ExcelTable({ tableData, setTableData, merges, setMerges, rowTags = {}, setRowTags, readOnly }: ExcelTableProps) {
   const [fileName, setFileName] = useState<string>('');
+  const [colWidths, setColWidths] = useState<Record<number, number>>({});
+  const [rowHeights, setRowHeights] = useState<Record<number, number>>({});
+
+  const [resizingCol, setResizingCol] = useState<number | null>(null);
+  const [resizingRow, setResizingRow] = useState<number | null>(null);
+  const [startX, setStartX] = useState(0);
+  const [startY, setStartY] = useState(0);
+  const [startWidth, setStartWidth] = useState(0);
+  const [startHeight, setStartHeight] = useState(0);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (resizingCol !== null) {
+        const newWidth = Math.max(50, startWidth + (e.clientX - startX));
+        setColWidths(prev => ({ ...prev, [resizingCol]: newWidth }));
+      }
+      if (resizingRow !== null) {
+        const newHeight = Math.max(30, startHeight + (e.clientY - startY));
+        setRowHeights(prev => ({ ...prev, [resizingRow]: newHeight }));
+      }
+    };
+
+    const handleMouseUp = () => {
+      setResizingCol(null);
+      setResizingRow(null);
+    };
+
+    if (resizingCol !== null || resizingRow !== null) {
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', handleMouseUp);
+    }
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [resizingCol, resizingRow, startX, startY, startWidth, startHeight]);
+
+  const handleColMouseDown = (e: React.MouseEvent, index: number) => {
+    if (readOnly) return;
+    e.preventDefault();
+    setResizingCol(index);
+    setStartX(e.clientX);
+    const th = (e.target as HTMLElement).closest('th');
+    setStartWidth(th ? th.getBoundingClientRect().width : colWidths[index] || 150);
+  };
+
+  const handleRowMouseDown = (e: React.MouseEvent, index: number) => {
+    if (readOnly) return;
+    e.preventDefault();
+    setResizingRow(index);
+    setStartY(e.clientY);
+    const tr = (e.target as HTMLElement).closest('tr');
+    setStartHeight(tr ? tr.getBoundingClientRect().height : rowHeights[index] || 40);
+  };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -89,11 +144,87 @@ export function ExcelTable({ tableData, setTableData, merges, setMerges, rowTags
     event.target.value = ''; // allow uploading same file again
   };
 
+  const [zoomedImage, setZoomedImage] = useState<string | null>(null);
+
   const handleCellChange = (rowIndex: number, colIndex: number, value: string) => {
     const newData = [...tableData];
     newData[rowIndex] = [...newData[rowIndex]];
     newData[rowIndex][colIndex] = value;
     setTableData(newData);
+  };
+
+  const handleCellImageUpload = (rowIndex: number, colIndex: number, event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const base64 = e.target?.result as string;
+      handleCellChange(rowIndex, colIndex, `[IMG:${base64}]`);
+    };
+    reader.readAsDataURL(file);
+    event.target.value = '';
+  };
+
+  const handlePaste = (rowIndex: number, colIndex: number, event: React.ClipboardEvent<HTMLTextAreaElement | HTMLDivElement>) => {
+    if (readOnly) return;
+    
+    const items = event.clipboardData?.items;
+    let hasImage = false;
+    
+    if (items) {
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') !== -1) {
+          hasImage = true;
+          const file = items[i].getAsFile();
+          if (file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              const base64 = e.target?.result as string;
+              handleCellChange(rowIndex, colIndex, `[IMG:${base64}]`);
+            };
+            reader.readAsDataURL(file);
+            event.preventDefault();
+            return;
+          }
+        }
+      }
+    }
+    
+    if (!hasImage && event.clipboardData) {
+      const textData = event.clipboardData.getData('text/plain');
+      if (textData && textData.includes('\t')) {
+        event.preventDefault(); // Prevent default text paste to handle cells mapping
+        const rows = textData.split(/\r?\n/).map(row => row.split('\t'));
+        
+        let cleanRows = rows;
+        if (cleanRows.length > 0 && cleanRows[cleanRows.length - 1].length === 1 && cleanRows[cleanRows.length - 1][0] === '') {
+          cleanRows = cleanRows.slice(0, -1);
+        }
+        
+        if (cleanRows.length === 0) return;
+
+        const newData = [...tableData].map(r => [...r]);
+        const startRow = rowIndex;
+        const startCol = colIndex;
+
+        cleanRows.forEach((rowData, rIdx) => {
+          const targetRow = startRow + rIdx;
+          if (targetRow >= newData.length) {
+            newData.push(Array(newData[0].length).fill(''));
+          }
+          
+          rowData.forEach((cellData, cIdx) => {
+            const targetCol = startCol + cIdx;
+            if (targetCol >= newData[0].length) {
+              newData.forEach(r => r.push(''));
+            }
+            newData[targetRow][targetCol] = cellData;
+          });
+        });
+
+        setTableData(newData);
+      }
+    }
   };
 
   const handleTagChange = (rowIndex: number, val: string) => {
@@ -154,7 +285,99 @@ export function ExcelTable({ tableData, setTableData, merges, setMerges, rowTags
     return { hideCell, rowSpan, colSpan };
   };
 
-  // Init empty table if needed
+  const renderCellContent = (rowIndex: number, colIndex: number, cell: string, isHeader: boolean) => {
+    const isImage = cell.startsWith('[IMG:') && cell.endsWith(']');
+    const base64 = isImage ? cell.slice(5, -1) : null;
+
+    if (isImage && base64) {
+      return (
+        <div 
+          className="relative p-2 w-full h-full flex items-center justify-center group/img" 
+          tabIndex={!readOnly ? 0 : undefined} 
+          onPaste={!readOnly ? (e) => handlePaste(rowIndex, colIndex, e) : undefined}
+        >
+          <img 
+            src={base64} 
+            alt="Cell content" 
+            className="max-h-[100px] max-w-full object-contain rounded cursor-zoom-in"
+            onClick={() => setZoomedImage(base64)}
+          />
+          {!readOnly && (
+            <button
+              type="button"
+              onClick={() => handleCellChange(rowIndex, colIndex, '')}
+              className="absolute top-1 right-1 bg-red-100 text-red-600 p-1 rounded-full opacity-0 group-hover/img:opacity-100 transition-opacity shadow-sm hover:bg-red-200"
+              title="Xóa ảnh"
+            >
+              <X size={12} />
+            </button>
+          )}
+        </div>
+      );
+    }
+
+    return (
+      <div className="relative w-full h-full group/text">
+        <textarea
+          value={cell}
+          readOnly={readOnly}
+          onChange={(e) => handleCellChange(rowIndex, colIndex, e.target.value)}
+          onPaste={!readOnly ? (e) => handlePaste(rowIndex, colIndex, e) : undefined}
+          className={`w-full h-full p-2 bg-transparent outline-none transition-shadow ${readOnly ? 'resize-none' : 'focus:bg-white focus:ring-2 focus:ring-blue-500 resize-none'}`}
+          placeholder={readOnly ? '' : (isHeader ? `Cột ${colIndex + 1}` : '')}
+          style={{ fieldSizing: 'content', minHeight: '100%' } as any}
+        />
+        {!readOnly && !cell && (
+          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/text:opacity-100 transition-opacity pointer-events-none">
+            <label className="cursor-pointer bg-gray-100 p-1.5 rounded hover:bg-gray-200 text-gray-500 pointer-events-auto" title="Chèn ảnh">
+              <ImageIcon size={14} />
+              <input type="file" accept="image/*" className="hidden" onChange={(e) => handleCellImageUpload(rowIndex, colIndex, e)} />
+            </label>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const handlePasteFromClipboard = async () => {
+    try {
+      const textData = await navigator.clipboard.readText();
+      if (textData) {
+        const rows = textData.split(/\r?\n/).map(row => row.split('\t'));
+        let cleanRows = rows;
+        if (cleanRows.length > 0 && cleanRows[cleanRows.length - 1].length === 1 && cleanRows[cleanRows.length - 1][0] === '') {
+          cleanRows = cleanRows.slice(0, -1);
+        }
+        
+        if (cleanRows.length === 0) return;
+
+        const newData = [...tableData].map(r => [...r]);
+        const startRow = 0;
+        const startCol = 0;
+
+        cleanRows.forEach((rowData, rIdx) => {
+          const targetRow = startRow + rIdx;
+          if (targetRow >= newData.length) {
+            newData.push(Array(newData[0].length).fill(''));
+          }
+          
+          rowData.forEach((cellData, cIdx) => {
+            const targetCol = startCol + cIdx;
+            if (targetCol >= newData[0].length) {
+              newData.forEach(r => r.push(''));
+            }
+            newData[targetRow][targetCol] = cellData;
+          });
+        });
+
+        setTableData(newData);
+      }
+    } catch (err) {
+      console.error('Failed to read clipboard contents: ', err);
+      alert('Không thể đọc dữ liệu từ clipboard. Vui lòng cấp quyền truy cập clipboard hoặc nhấn Ctrl+V vào ô đầu tiên để dán.');
+    }
+  };
+
   if (tableData.length === 0) {
       if (readOnly) {
          return <div className="p-8 text-center text-gray-500 border border-gray-200 rounded-md bg-gray-50">Không có dữ liệu bảng.</div>;
@@ -212,6 +435,17 @@ export function ExcelTable({ tableData, setTableData, merges, setMerges, rowTags
                 <span>Trích xuất từ Excel</span>
               </button>
             </div>
+            
+            <button
+              type="button"
+              onClick={handlePasteFromClipboard}
+              className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 rounded transition-colors border border-blue-200"
+              title="Dán tất cả dữ liệu đã copy từ Excel"
+            >
+              <ClipboardList size={16} />
+              <span>Dán bảng từ Excel</span>
+            </button>
+            
             {fileName && <span className="text-sm text-gray-600 font-medium truncate max-w-[200px]">{fileName}</span>}
           </div>
           
@@ -238,21 +472,26 @@ export function ExcelTable({ tableData, setTableData, merges, setMerges, rowTags
         <table className="w-full text-left border-collapse min-w-max">
           <thead>
             {tableData.slice(0, 1).map((row, rowIndex) => (
-              <tr key={rowIndex} className="bg-gray-100/50">
+              <tr key={rowIndex} className="bg-gray-100/50" style={{ height: rowHeights[rowIndex] || undefined }}>
                 {row.map((cell, colIndex) => {
                   const { hideCell, rowSpan, colSpan } = getCellRenderingArgs(rowIndex, colIndex);
                   if (hideCell) return null;
                   
                   return (
-                  <th key={colIndex} rowSpan={rowSpan} colSpan={colSpan} className="p-0 border border-gray-300 font-semibold text-gray-700 min-w-[150px] relative group bg-gray-50">
-                    <textarea
-                      value={cell}
-                      readOnly={readOnly}
-                      onChange={(e) => handleCellChange(rowIndex, colIndex, e.target.value)}
-                      className={`w-full min-h-[40px] p-2 bg-transparent outline-none font-semibold text-gray-800 transition-shadow resize ${readOnly ? 'resize-none' : 'focus:bg-white focus:ring-2 focus:ring-blue-500'}`}
-                      placeholder={readOnly ? '' : `Cột ${colIndex + 1}`}
-                      style={{ fieldSizing: 'content' } as any} // modern css feature, fallbacks to manual resize
-                    />
+                  <th key={colIndex} rowSpan={rowSpan} colSpan={colSpan} className="p-0 border border-gray-300 font-semibold text-gray-700 relative group bg-gray-50 align-top h-[1px]" style={{ width: colWidths[colIndex] || (colIndex === 0 ? 150 : undefined), minWidth: colWidths[colIndex] || 150 }}>
+                    {!readOnly && (
+                      <>
+                        <div
+                          className="absolute top-0 right-0 w-1.5 h-full cursor-col-resize hover:bg-blue-500 z-10 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onMouseDown={(e) => handleColMouseDown(e, colIndex)}
+                        />
+                        <div
+                          className="absolute bottom-0 left-0 w-full h-1.5 cursor-row-resize hover:bg-blue-500 z-10 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onMouseDown={(e) => handleRowMouseDown(e, rowIndex)}
+                        />
+                      </>
+                    )}
+                    {renderCellContent(rowIndex, colIndex, cell, true)}
                     {!readOnly && tableData[0]?.length > 1 && (
                        <button 
                          type="button"
@@ -278,19 +517,26 @@ export function ExcelTable({ tableData, setTableData, merges, setMerges, rowTags
           </thead>
           <tbody>
             {tableData.slice(1).map((row, rowIndex) => (
-              <tr key={rowIndex + 1} className="hover:bg-gray-50/50 transition-colors group">
+              <tr key={rowIndex + 1} className="hover:bg-gray-50/50 transition-colors group" style={{ height: rowHeights[rowIndex + 1] || undefined }}>
                 {row.map((cell, colIndex) => {
                   const { hideCell, rowSpan, colSpan } = getCellRenderingArgs(rowIndex + 1, colIndex);
                   if (hideCell) return null;
 
                   return (
-                  <td key={colIndex} rowSpan={rowSpan} colSpan={colSpan} className="p-0 border border-gray-300 relative">
-                    <textarea
-                      value={cell}
-                      readOnly={readOnly}
-                      onChange={(e) => handleCellChange(rowIndex + 1, colIndex, e.target.value)}
-                      className={`w-full min-h-[40px] h-full p-2 bg-transparent outline-none transition-shadow ${readOnly ? 'resize-none' : 'focus:bg-white focus:ring-2 focus:ring-blue-500 resize'}`}
-                    />
+                  <td key={colIndex} rowSpan={rowSpan} colSpan={colSpan} className="p-0 border border-gray-300 relative align-top h-[1px]" style={{ width: colWidths[colIndex] || undefined }}>
+                    {!readOnly && (
+                      <>
+                        <div
+                          className="absolute top-0 right-0 w-1.5 h-full cursor-col-resize hover:bg-blue-500 z-10 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onMouseDown={(e) => handleColMouseDown(e, colIndex)}
+                        />
+                        <div
+                          className="absolute bottom-0 left-0 w-full h-1.5 cursor-row-resize hover:bg-blue-500 z-10 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onMouseDown={(e) => handleRowMouseDown(e, rowIndex + 1)}
+                        />
+                      </>
+                    )}
+                    {renderCellContent(rowIndex + 1, colIndex, cell, false)}
                   </td>
                 )})}
                 {!readOnly && (
@@ -321,6 +567,21 @@ export function ExcelTable({ tableData, setTableData, merges, setMerges, rowTags
           </tbody>
         </table>
       </div>
+
+      {/* Image Zoom Modal */}
+      {zoomedImage && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setZoomedImage(null)}>
+          <div className="relative max-w-4xl max-h-[90vh] flex items-center justify-center animate-in fade-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+            <img src={zoomedImage} alt="Zoomed cell content" className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl bg-white" />
+            <button 
+              onClick={() => setZoomedImage(null)}
+              className="absolute -top-4 -right-4 bg-white text-gray-800 rounded-full p-2 shadow-lg hover:bg-gray-100 transition-colors"
+            >
+              <X size={20} />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -311,7 +311,37 @@ export function PackageBuilder({ savedMaterials, savedPackages, setSavedPackages
          filteredData.forEach((row, rowIdx) => {
              row.forEach((cellValue, colIdx) => {
                  const cell = worksheet.getCell(currentRow + rowIdx, colIdx + 1);
-                 cell.value = cellValue;
+                 
+                 if (typeof cellValue === 'string' && cellValue.startsWith('[IMG:data:image/') && cellValue.endsWith(']')) {
+                    cell.value = '';
+                    const base64 = cellValue.slice(5, -1);
+                    const extMatch = base64.match(/data:image\/(.+?);base64,/);
+                    const ext = extMatch ? extMatch[1] : 'png';
+                    
+                    try {
+                      const imageId = workbook.addImage({
+                        base64: base64,
+                        extension: ext as any,
+                      });
+                      
+                      worksheet.addImage(imageId, {
+                        tl: { col: colIdx + 0.05, row: currentRow + rowIdx - 1 + 0.05 },
+                        br: { col: colIdx + 1 - 0.05, row: currentRow + rowIdx - 0.05 },
+                        editAs: 'oneCell'
+                      });
+
+                      const worksheetRow = worksheet.getRow(currentRow + rowIdx);
+                      if ((worksheetRow.height || 15) < 100) {
+                          worksheetRow.height = 100;
+                      }
+                    } catch (err) {
+                      console.error('Lỗi khi chèn ảnh vào Excel:', err);
+                      // In case of error
+                    }
+                 } else {
+                    cell.value = cellValue;
+                 }
+                 
                  cell.alignment = { wrapText: true, vertical: 'middle' };
                  // Adding borders
                  cell.border = {
