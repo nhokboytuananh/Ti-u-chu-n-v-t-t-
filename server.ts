@@ -3,16 +3,66 @@ import path from "path";
 import cors from "cors";
 import { createServer as createViteServer } from "vite";
 import { db } from "./src/db/index.ts";
-import { materials, packages } from "./src/db/schema.ts";
-import { eq } from "drizzle-orm";
+import { materials, materialAuditLogs, packages } from "./src/db/schema.ts";
+import { eq, desc } from "drizzle-orm";
 import { requireAuth, AuthRequest } from "./src/middleware/auth.ts";
+import crypto from "crypto";
+
+async function initDb() {
+  try {
+    await db.execute(`
+      CREATE TABLE IF NOT EXISTS materials (
+        id TEXT PRIMARY KEY,
+        code TEXT NOT NULL,
+        name TEXT NOT NULL,
+        content TEXT NOT NULL,
+        notes TEXT,
+        excel_data JSONB NOT NULL,
+        images JSONB NOT NULL,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        updated_by TEXT
+      );
+    `);
+    await db.execute(`
+      CREATE TABLE IF NOT EXISTS material_audit_logs (
+        id TEXT PRIMARY KEY,
+        material_id TEXT NOT NULL,
+        action TEXT NOT NULL,
+        previous_data JSONB,
+        new_data JSONB,
+        updated_by TEXT,
+        updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+    `);
+    await db.execute(`
+      CREATE TABLE IF NOT EXISTS packages (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        material_ids JSONB NOT NULL,
+        hidden_tags JSONB,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+    `);
+    console.log("Database initialized successfully");
+  } catch (err) {
+    console.error("Failed to initialize database:", err);
+  }
+}
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = process.env.PORT || 3000;
 
-  app.use(cors());
+  app.use(cors({
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept']
+  }));
   app.use(express.json({ limit: "50mb" }));
+
+  // Initialize DB tables
+  await initDb();
 
   // Public API to read materials
   app.get("/api/materials", async (req, res) => {
@@ -29,25 +79,56 @@ async function startServer() {
   app.post("/api/materials", requireAuth, async (req: AuthRequest, res) => {
     try {
       const { id, code, name, content, excelData, images, notes } = req.body;
+      const userEmail = req.user?.email || 'Unknown User';
+      
+      // Check if material exists to log context correctly
+      let existingMaterial = null;
+      try {
+         const rows = await db.select().from(materials).where(eq(materials.id, id));
+         if (rows.length > 0) {
+            existingMaterial = rows[0];
+         }
+      } catch (err) {
+         console.warn("Could not fetch existing material", err);
+      }
+
       const data = await db.insert(materials).values({
         id,
-        code,
-        name,
-        content,
-        notes,
-        excelData: excelData || [],
+        code: code || '',
+        name: name || '',
+        content: content || '',
+        notes: notes || '',
+        excelData: excelData || { data: [], merges: [], tags: {} },
         images: images || [],
+        updatedBy: userEmail,
       }).onConflictDoUpdate({
         target: materials.id,
         set: {
-          code,
-          name,
-          content,
-          notes,
-          excelData: excelData || [],
+          code: code || '',
+          name: name || '',
+          content: content || '',
+          notes: notes || '',
+          excelData: excelData || { data: [], merges: [], tags: {} },
           images: images || [],
+          updatedBy: userEmail,
+          updatedAt: new Date()
         }
       }).returning();
+      
+      // Log the audit event
+      try {
+        await db.insert(materialAuditLogs).values({
+           id: crypto.randomUUID(),
+           materialId: id,
+           action: existingMaterial ? 'update' : 'create',
+           previousData: existingMaterial || null,
+           newData: data[0],
+           updatedBy: userEmail
+        });
+      } catch(auditErr) {
+        console.error("Failed to write audit log:", auditErr);
+      }
+
       res.json(data[0]);
     } catch (error) {
       console.error(error);
@@ -57,12 +138,54 @@ async function startServer() {
 
   app.delete("/api/materials/:id", requireAuth, async (req: AuthRequest, res) => {
     try {
-      await db.delete(materials).where(eq(materials.id, req.params.id));
+      const materialId = req.params.id;
+      const userEmail = req.user?.email || 'Unknown User';
+
+      // Keep previous data for the log
+      let existingMaterial = null;
+      try {
+         const rows = await db.select().from(materials).where(eq(materials.id, materialId));
+         if (rows.length > 0) {
+            existingMaterial = rows[0];
+         }
+      } catch (err) {}
+
+      await db.delete(materials).where(eq(materials.id, materialId));
+      
+      if (existingMaterial) {
+          try {
+             await db.insert(materialAuditLogs).values({
+                id: crypto.randomUUID(),
+                materialId: materialId,
+                action: 'delete',
+                previousData: existingMaterial,
+                newData: null,
+                updatedBy: userEmail
+             });
+          } catch(auditErr) {
+             console.error("Failed to write audit log:", auditErr);
+          }
+      }
+
       res.json({ success: true });
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: "Failed to delete material" });
     }
+  });
+
+  // Audit Logs API
+  app.get("/api/materials/:id/audit-logs", async (req, res) => {
+     try {
+        const materialId = req.params.id;
+        const logs = await db.select().from(materialAuditLogs)
+           .where(eq(materialAuditLogs.materialId, materialId))
+           .orderBy(desc(materialAuditLogs.updatedAt));
+        res.json(logs);
+     } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Failed to fetch audit logs" });
+     }
   });
 
   // Public API to read packages
