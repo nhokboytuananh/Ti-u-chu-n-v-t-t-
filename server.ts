@@ -137,9 +137,9 @@ async function startServer() {
       }
 
       res.json(data[0]);
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      res.status(500).json({ error: "Failed to save material" });
+      res.status(500).json({ error: "Failed to save material", details: error.message });
     }
   });
 

@@ -214,7 +214,10 @@ export default function App() {
          },
          body: JSON.stringify(newMaterial)
       });
-      if (!res.ok) throw new Error('Network error');
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => null);
+        throw new Error(errorData?.details || errorData?.error || 'Network error');
+      }
       
       const resData = await res.json();
       
@@ -244,9 +247,9 @@ export default function App() {
 
       setIsEditing(false); // Switch to view mode after saving
       alert("Dữ liệu vật tư đã được lưu!");
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      alert('Đã xảy ra lỗi khi lưu vật tư');
+      alert(`Đã xảy ra lỗi khi lưu vật tư: ${e.message}`);
     }
   };
 
