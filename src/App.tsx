@@ -610,26 +610,30 @@ export default function App() {
                 </section>
 
                 {/* Hình ảnh */}
-                <section className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                  <div className="px-6 py-4 border-b border-gray-100 bg-gray-50 flex items-center gap-2">
-                    <ImageIcon className="text-blue-500" size={20} />
-                    <h2 className="text-lg font-semibold text-gray-800">Hình ảnh minh họa</h2>
-                  </div>
-                  <div className="p-6">
-                    <ImageUpload images={images} setImages={setImages} readOnly={!isEditing} />
-                  </div>
-                </section>
+                {(isEditing || images.length > 0) && (
+                  <section className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                    <div className="px-6 py-4 border-b border-gray-100 bg-gray-50 flex items-center gap-2">
+                      <ImageIcon className="text-blue-500" size={20} />
+                      <h2 className="text-lg font-semibold text-gray-800">Hình ảnh minh họa</h2>
+                    </div>
+                    <div className="p-6">
+                      <ImageUpload images={images} setImages={setImages} readOnly={!isEditing} />
+                    </div>
+                  </section>
+                )}
 
                 {/* Yêu cầu chung */}
-                <section className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                  <div className="px-6 py-4 border-b border-gray-100 bg-gray-50 flex items-center gap-2">
-                    <AlignLeft className="text-blue-500" size={20} />
-                    <h2 className="text-lg font-semibold text-gray-800">Yêu cầu chung</h2>
-                  </div>
-                  <div className="p-6">
-                    <RichTextEditor value={richText} onChange={setRichText} readOnly={!isEditing} />
-                  </div>
-                </section>
+                {(isEditing || (richText && richText !== '<p><br></p>' && (richText.includes('<img') || richText.replace(/<[^>]*>?/gm, '').trim() !== ''))) && (
+                  <section className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                    <div className="px-6 py-4 border-b border-gray-100 bg-gray-50 flex items-center gap-2">
+                      <AlignLeft className="text-blue-500" size={20} />
+                      <h2 className="text-lg font-semibold text-gray-800">Yêu cầu chung</h2>
+                    </div>
+                    <div className="p-6">
+                      <RichTextEditor value={richText} onChange={setRichText} readOnly={!isEditing} />
+                    </div>
+                  </section>
+                )}
 
                 {/* Bảng thông số kỹ thuật */}
                 <section className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
