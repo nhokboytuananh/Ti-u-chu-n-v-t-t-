@@ -444,7 +444,7 @@ export default function App() {
                 <ClipboardList size={22} />
               </div>
               <div className="hidden sm:block">
-                <h1 className="text-lg sm:text-xl font-bold tracking-tight text-gray-900 leading-none truncate pr-2">Tiêu chuẩn Kỹ thuật</h1>
+                <h1 className="text-lg sm:text-xl font-bold tracking-tight text-gray-900 leading-none truncate pr-2">Tiêu chuẩn Kỹ thuật Vật tư</h1>
               </div>
             </div>
             <div className="flex flex-col sm:flex-row items-center gap-2 shrink-0">
