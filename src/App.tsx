@@ -28,19 +28,29 @@ export default function App() {
       const res = await fetch(`${API_BASE_URL}/api/materials`);
       if (res.ok) {
         const data = await res.json();
-        const mapped = data.map((d: any) => ({
-          id: d.id,
-          code: d.code,
-          name: d.name,
-          richText: d.content,
-          excelData: d.excelData?.data || [],
-          excelMerges: d.excelData?.merges || [],
-          rowTags: d.excelData?.tags || {},
-          images: d.images || [],
-          notes: d.notes || '',
-          updatedBy: d.updatedBy,
-          updatedAt: d.updatedAt
-        }));
+        const mapped = data.map((d: any) => {
+          let tables = d.excelData?.tables || [];
+          if (tables.length === 0 && d.excelData?.data) {
+            tables = [{
+              id: 'legacy-table',
+              title: 'Bảng thông số kỹ thuật',
+              data: d.excelData.data || [],
+              merges: d.excelData.merges || [],
+              tags: d.excelData.tags || {}
+            }];
+          }
+          return {
+            id: d.id,
+            code: d.code,
+            name: d.name,
+            richText: d.content,
+            tables: tables,
+            images: d.images || [],
+            notes: d.notes || '',
+            updatedBy: d.updatedBy,
+            updatedAt: d.updatedAt
+          };
+        });
         setSavedMaterials(mapped);
       }
     } catch (e) {
@@ -108,9 +118,17 @@ export default function App() {
   const [code, setCode] = useState('');
   const [name, setName] = useState('');
   const [richText, setRichText] = useState('');
-  const [excelData, setExcelData] = useState<string[][]>([]);
-  const [excelMerges, setExcelMerges] = useState<xlsx.Range[]>([]);
-  const [rowTags, setRowTags] = useState<Record<number, string>>({});
+  const [tables, setTables] = useState<import('./types').ExcelTableConfig[]>([{
+     id: crypto.randomUUID(),
+     title: 'Bảng thông số kỹ thuật',
+    data: [
+      ['STT', 'Hạng mục', 'Đơn vị', 'Yêu cầu', 'Thông số chào'],
+      ['1', 'Nhà sản xuất', '', 'Nêu cụ thể', ''],
+      ['2', 'Nước sản xuất', '', 'Nêu cụ thể', '']
+    ],
+    merges: [],
+    tags: {}
+  }]);
   const [images, setImages] = useState<{ url: string; name: string }[]>([]);
   const [notes, setNotes] = useState('');
 
@@ -143,9 +161,17 @@ export default function App() {
       setCode('');
       setName('');
       setRichText('');
-      setExcelData([]);
-      setExcelMerges([]);
-      setRowTags({});
+      setTables([{
+         id: crypto.randomUUID(),
+         title: 'Bảng thông số kỹ thuật',
+         data: [
+           ['STT', 'Hạng mục', 'Đơn vị', 'Yêu cầu', 'Thông số chào'],
+           ['1', 'Nhà sản xuất', '', 'Nêu cụ thể', ''],
+           ['2', 'Nước sản xuất', '', 'Nêu cụ thể', '']
+         ],
+         merges: [],
+         tags: {}
+      }]);
       setImages([]);
       setNotes('');
       setIsEditing(true);
@@ -200,7 +226,7 @@ export default function App() {
       code: code.trim(),
       name: name.trim(),
       content: richText,
-      excelData: { data: excelData, merges: excelMerges, tags: rowTags },
+      excelData: { tables },
       images,
       notes,
     };
@@ -225,15 +251,25 @@ export default function App() {
       
       setSavedMaterials(prev => {
         const existingIdx = prev.findIndex(m => m.id === currentId);
-        // Note: material from backend differs, mapping to frontend properties
+        
+        // Handle migration inside
+        let fetchedTables = resData.excelData?.tables || [];
+        if (fetchedTables.length === 0 && resData.excelData?.data) {
+           fetchedTables = [{
+              id: 'legacy-table',
+              title: 'Bảng thông số kỹ thuật',
+              data: resData.excelData.data || [],
+              merges: resData.excelData.merges || [],
+              tags: resData.excelData.tags || {}
+           }];
+        }
+
         const fetchedMat: Material = {
             id: resData.id,
             code: resData.code,
             name: resData.name,
             richText: resData.content,
-            excelData: resData.excelData?.data || [],
-            excelMerges: resData.excelData?.merges || [],
-            rowTags: resData.excelData?.tags || {},
+            tables: fetchedTables,
             images: resData.images || [],
             notes: resData.notes || '',
             updatedBy: resData.updatedBy,
@@ -265,9 +301,17 @@ export default function App() {
       setCode('');
       setName('');
       setRichText('');
-      setExcelData([]);
-      setExcelMerges([]);
-      setRowTags({});
+      setTables([{
+         id: crypto.randomUUID(),
+         title: 'Bảng thông số kỹ thuật',
+         data: [
+           ['STT', 'Hạng mục', 'Đơn vị', 'Yêu cầu', 'Thông số chào'],
+           ['1', 'Nhà sản xuất', '', 'Nêu cụ thể', ''],
+           ['2', 'Nước sản xuất', '', 'Nêu cụ thể', '']
+         ],
+         merges: [],
+         tags: {}
+      }]);
       setImages([]);
       setNotes('');
       setCodeError('');
@@ -281,9 +325,17 @@ export default function App() {
     setCode(material.code);
     setName(material.name);
     setRichText(material.richText);
-    setExcelData(material.excelData);
-    setExcelMerges(material.excelMerges || []);
-    setRowTags(material.rowTags || {});
+    setTables(material.tables && material.tables.length > 0 ? material.tables : [{
+         id: crypto.randomUUID(),
+         title: 'Bảng thông số kỹ thuật',
+         data: [
+           ['STT', 'Hạng mục', 'Đơn vị', 'Yêu cầu', 'Thông số chào'],
+           ['1', 'Nhà sản xuất', '', 'Nêu cụ thể', ''],
+           ['2', 'Nước sản xuất', '', 'Nêu cụ thể', '']
+         ],
+         merges: [],
+         tags: {}
+    }]);
     setImages(material.images || []);
     setNotes(material.notes);
     setCodeError('');
@@ -672,25 +724,80 @@ export default function App() {
 
                 {/* Bảng thông số kỹ thuật */}
                 <section className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                  <div className="px-6 py-4 border-b border-gray-100 bg-gray-50 flex items-center gap-2">
-                    <Database className="text-blue-500" size={20} />
-                    <h2 className="text-lg font-semibold text-gray-800">Bảng thông số kỹ thuật</h2>
-                  </div>
-                  <div className="p-6 overflow-hidden">
+                  <div className="px-6 py-4 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                       <Database className="text-blue-500" size={20} />
+                       <h2 className="text-lg font-semibold text-gray-800">Bảng thông số kỹ thuật</h2>
+                    </div>
                     {isEditing && (
-                      <p className="text-sm text-gray-500 mb-4 items-center">
-                        Cấu hình bảng hoặc tải lên file Excel để trích xuất tự động (Giữ nguyên gộp ô và có thể kéo chiều dài/rộng ô).
-                      </p>
+                       <button
+                         type="button"
+                         onClick={() => setTables([...tables, { id: crypto.randomUUID(), title: `Bảng thông số ${tables.length + 1}`, data: [['STT', 'Hạng mục', 'Đơn vị', 'Yêu cầu', 'Thông số chào'], ['1', 'Nhà sản xuất', '', 'Nêu cụ thể', ''], ['2', 'Nước sản xuất', '', 'Nêu cụ thể', '']], merges: [], tags: {} }])}
+                         className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 rounded transition-colors"
+                       >
+                         <Plus size={16} /> Thêm bảng
+                       </button>
                     )}
-                    <ExcelTable 
-                      tableData={excelData} 
-                      setTableData={setExcelData} 
-                      merges={excelMerges} 
-                      setMerges={setExcelMerges}
-                      rowTags={rowTags}
-                      setRowTags={setRowTags}
-                      readOnly={!isEditing}
-                    />
+                  </div>
+                  <div className="p-6 space-y-8">
+                    {tables.map((table, tIndex) => (
+                      <div key={table.id} className="space-y-4">
+                        <div className="flex items-center gap-3">
+                           {isEditing ? (
+                             <input
+                               type="text"
+                               value={table.title}
+                               onChange={e => {
+                                  const newTables = [...tables];
+                                  newTables[tIndex].title = e.target.value;
+                                  setTables(newTables);
+                               }}
+                               className="font-semibold text-gray-800 border-b border-dashed border-gray-300 focus:border-blue-500 outline-none w-1/2 py-1"
+                               placeholder="Tên bảng..."
+                             />
+                           ) : (
+                             <h3 className="font-semibold text-gray-800">{table.title}</h3>
+                           )}
+                           
+                           {isEditing && tables.length > 1 && (
+                             <button
+                               type="button"
+                               onClick={() => setTables(tables.filter((_, i) => i !== tIndex))}
+                               className="text-red-500 hover:text-red-700 p-1"
+                               title="Xóa bảng này"
+                             >
+                               <Trash2 size={16} />
+                             </button>
+                           )}
+                        </div>
+                        
+                        <ExcelTable 
+                          tableData={table.data} 
+                          setTableData={newData => {
+                             const newTables = [...tables];
+                             newTables[tIndex].data = typeof newData === 'function' ? newData(newTables[tIndex].data) : newData;
+                             setTables(newTables);
+                          }} 
+                          merges={table.merges} 
+                          setMerges={newMerges => {
+                             const newTables = [...tables];
+                             newTables[tIndex].merges = typeof newMerges === 'function' ? newMerges(newTables[tIndex].merges) : newMerges;
+                             setTables(newTables);
+                          }}
+                          rowTags={table.tags}
+                          setRowTags={newTags => {
+                             const newTables = [...tables];
+                             newTables[tIndex].tags = typeof newTags === 'function' ? newTags(newTables[tIndex].tags) : newTags;
+                             setTables(newTables);
+                          }}
+                          readOnly={!isEditing}
+                        />
+                      </div>
+                    ))}
+                    
+                    {tables.length === 0 && (
+                       <div className="text-center p-8 text-gray-500 text-sm">Chưa có bảng thông số nào.</div>
+                    )}
                   </div>
                 </section>
 

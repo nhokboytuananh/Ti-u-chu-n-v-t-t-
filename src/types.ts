@@ -1,13 +1,19 @@
 import * as xlsx from 'xlsx';
 
+export interface ExcelTableConfig {
+  id: string;
+  title: string;
+  data: string[][];
+  merges: xlsx.Range[];
+  tags: Record<number, string>;
+}
+
 export interface Material {
   id: string;
   code: string;
   name: string;
   richText: string;
-  excelData: string[][];
-  excelMerges: xlsx.Range[];
-  rowTags?: Record<number, string>;
+  tables: ExcelTableConfig[];
   images: { url: string; name: string }[];
   notes: string;
   updatedBy?: string;
