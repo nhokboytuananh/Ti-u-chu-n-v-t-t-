@@ -43,6 +43,21 @@ export function PackageBuilder({ savedMaterials, savedPackages, setSavedPackages
     setSelectedIds(newSelectedIds);
   };
 
+  const moveItemTo = (currentIndex: number, newIndexStr: string) => {
+    let newIndex = parseInt(newIndexStr, 10);
+    if (isNaN(newIndex)) return;
+    newIndex = newIndex - 1; // 1-based to 0-based
+    if (newIndex < 0) newIndex = 0;
+    if (newIndex >= selectedIds.length) newIndex = selectedIds.length - 1;
+    
+    if (currentIndex === newIndex) return;
+    
+    const newSelectedIds = [...selectedIds];
+    const [item] = newSelectedIds.splice(currentIndex, 1);
+    newSelectedIds.splice(newIndex, 0, item);
+    setSelectedIds(newSelectedIds);
+  };
+
   const removeSelected = (id: string) => {
     setSelectedIds(selectedIds.filter(selectedId => selectedId !== id));
   };
@@ -535,7 +550,7 @@ export function PackageBuilder({ savedMaterials, savedPackages, setSavedPackages
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="font-semibold text-gray-800">Cấu trúc hiện tại ({selectedIds.length})</h3>
-                <p className="text-xs text-gray-500 mt-1">Sắp xếp thứ tự bằng nút mũi tên</p>
+                <p className="text-xs text-gray-500 mt-1">Sắp xếp bằng nút mũi tên hoặc nhập trực tiếp số thứ tự</p>
               </div>
               {isAuthenticated && (
                 <button
@@ -634,9 +649,25 @@ export function PackageBuilder({ savedMaterials, savedPackages, setSavedPackages
                          </button>
                        </div>
                        
-                       <div className="flex bg-gray-100 rounded px-2 py-1 shrink-0 text-gray-500 font-mono text-sm mr-2 w-8 justify-center">
-                         {index + 1}
-                       </div>
+                       <input
+                         key={`order-${id}-${index}`}
+                         type="number"
+                         min="1"
+                         max={selectedIds.length}
+                         className="flex bg-gray-100 border border-transparent hover:bg-gray-200 focus:bg-white focus:border-blue-400 focus:ring-1 focus:ring-blue-400 rounded px-1 py-1 shrink-0 text-gray-600 font-mono text-sm mr-2 w-10 text-center outline-none transition-colors"
+                         defaultValue={index + 1}
+                         onBlur={(e) => {
+                           moveItemTo(index, e.target.value);
+                           e.target.value = (index + 1).toString(); // reset to current if no change
+                         }}
+                         onKeyDown={(e) => {
+                           if (e.key === 'Enter') {
+                             moveItemTo(index, (e.target as HTMLInputElement).value);
+                             (e.target as HTMLInputElement).blur();
+                           }
+                         }}
+                         title="Nhập số thứ tự để di chuyển"
+                       />
                        
                        <div className="overflow-hidden flex-1">
                          <h4 className="font-medium text-gray-800 text-sm truncate">{mat.name}</h4>
