@@ -770,9 +770,13 @@ export default function App() {
                  <div className="text-center p-8 text-gray-500">Không có dữ liệu lịch sử nào.</div>
               ) : (
                 <div className="space-y-4">
-                  {auditLogsData.map((log) => (
-                     <div key={log.id} className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
-                       <div className="flex justify-between items-start">
+                  {(() => {
+                    const firstCreate = auditLogsData.slice().reverse().find(l => l.action === 'create') || auditLogsData.find(l => l.action === 'create');
+                    const updates = auditLogsData.filter(l => l.id !== firstCreate?.id).slice(0, 4);
+                    const list = firstCreate ? [...updates, firstCreate] : updates;
+                    return list.map((log) => (
+                       <div key={log.id} className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+                         <div className="flex justify-between items-start">
                          <div className="flex gap-2 items-center">
                             <span className={`text-xs font-bold uppercase px-2 py-1 rounded ${log.action === 'create' ? 'bg-emerald-100 text-emerald-700' : log.action === 'update' ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700'}`}>
                                {log.action === 'create' ? 'Tạo mới' : log.action === 'update' ? 'Cập nhật' : 'Xóa'}
@@ -782,8 +786,9 @@ export default function App() {
                          <span className="text-sm text-gray-500">{new Date(log.updatedAt).toLocaleString('vi-VN')}</span>
                        </div>
                      </div>
-                  ))}
-                </div>
+                   ));
+                 })()}
+                 </div>
               )}
             </div>
           </div>
