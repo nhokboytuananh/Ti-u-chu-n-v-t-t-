@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Save, ClipboardList, Database, Info, FileText, Image as ImageIcon, AlignLeft, Plus, Edit2, Trash2, List, FileArchive, Search, X, User, LogOut, Key } from 'lucide-react';
+import { Save, ClipboardList, Database, Info, FileText, Image as ImageIcon, AlignLeft, Plus, Edit2, Trash2, List, FileArchive, Search, X, User, LogOut, Key, Loader2 } from 'lucide-react';
 import { RichTextEditor } from './components/RichTextEditor';
 import { ExcelTable } from './components/ExcelTable';
 import { ImageUpload } from './components/ImageUpload';
@@ -19,6 +19,7 @@ export default function App() {
   const [savedPackages, setSavedPackages] = useState<BiddingPackage[]>([]);
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
 
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
@@ -204,6 +205,7 @@ export default function App() {
       notes,
     };
     
+    setIsSaving(true);
     try {
       const token = await user.getIdToken();
       const res = await fetch(`${API_BASE_URL}/api/materials`, {
@@ -250,6 +252,8 @@ export default function App() {
     } catch (e: any) {
       console.error(e);
       alert(`Đã xảy ra lỗi khi lưu vật tư: ${e.message}`);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -509,13 +513,16 @@ export default function App() {
                 <button 
                   type="button"
                   onClick={handleSave}
+                  disabled={isSaving}
                   className={`flex items-center gap-2 px-4 sm:px-5 py-2 rounded-lg text-sm font-semibold transition-all shadow hover:shadow-md ring-2 ring-transparent focus:ring-offset-2 focus:outline-none ${
                     isEditing 
-                      ? 'bg-blue-600 hover:bg-blue-700 text-white focus:ring-blue-500'
+                      ? 'bg-blue-600 hover:bg-blue-700 text-white focus:ring-blue-500 disabled:opacity-75 disabled:cursor-not-allowed'
                       : 'bg-emerald-600 hover:bg-emerald-700 text-white focus:ring-emerald-500'
                   }`}
                 >
-                  {isEditing ? (
+                  {isSaving ? (
+                    <><Loader2 size={18} className="animate-spin" /> Đang lưu...</>
+                  ) : isEditing ? (
                     <><Save size={18} /> Lưu cập nhật</>
                   ) : (
                     <><Edit2 size={18} /> Chỉnh sửa</>
