@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import * as xlsx from 'xlsx';
-import { Upload, Plus, Trash2, Image as ImageIcon, X, ZoomIn, ClipboardList } from 'lucide-react';
+import { Upload, Plus, Trash2, Image as ImageIcon, X, ZoomIn, ClipboardList, Undo } from 'lucide-react';
 
 interface ExcelTableProps {
   tableData: string[][];
@@ -145,6 +145,23 @@ export function ExcelTable({ tableData, setTableData, merges, setMerges, rowTags
   };
 
   const [zoomedImage, setZoomedImage] = useState<string | null>(null);
+  
+  const [history, setHistory] = useState<{tableData: string[][], rowTags: Record<number, string>}[]>([]);
+
+  const saveHistory = () => {
+    setHistory(prev => [...prev, { 
+      tableData: tableData.map(r => [...r]), 
+      rowTags: { ...rowTags } 
+    }].slice(-20)); // keep last 20 actions
+  };
+
+  const undo = () => {
+    if (history.length === 0) return;
+    const lastState = history[history.length - 1];
+    setHistory(prev => prev.slice(0, -1));
+    setTableData(lastState.tableData);
+    if (setRowTags) setRowTags(lastState.rowTags);
+  };
 
   const handleCellChange = (rowIndex: number, colIndex: number, value: string) => {
     const newData = [...tableData];
@@ -236,6 +253,7 @@ export function ExcelTable({ tableData, setTableData, merges, setMerges, rowTags
           });
         });
 
+        saveHistory();
         setTableData(newData);
       }
     }
@@ -249,17 +267,48 @@ export function ExcelTable({ tableData, setTableData, merges, setMerges, rowTags
     }));
   };
 
+  const handleTagPaste = (rowIndex: number, event: React.ClipboardEvent) => {
+    if (!setRowTags) return;
+    const textData = event.clipboardData.getData('text/plain');
+    if (textData && (textData.includes('\t') || textData.includes('\n'))) {
+      event.preventDefault();
+      const rowStrings = textData.split(/\r?\n/);
+      const rows = rowStrings.map(row => row.split('\t')[0] || ''); // only take the first column value
+      
+      let cleanRows = rows;
+      if (cleanRows.length > 0 && cleanRows[cleanRows.length - 1] === '') {
+        cleanRows = cleanRows.slice(0, -1);
+      }
+      
+      if (cleanRows.length === 0) return;
+      
+      saveHistory();
+      setRowTags(prev => {
+        const newTags = { ...prev };
+        for (let i = 0; i < cleanRows.length; i++) {
+          if (rowIndex + i < tableData.length) { // ensure we don't go past table bounds
+            newTags[rowIndex + i] = cleanRows[i];
+          }
+        }
+        return newTags;
+      });
+    }
+  };
+
   const addRow = () => {
+    saveHistory();
     const colsCount = tableData[0]?.length || 4;
     setTableData([...tableData, Array(colsCount).fill('')]);
   };
 
   const addColumn = () => {
+    saveHistory();
     setTableData(tableData.map(row => [...row, '']));
   };
 
   const deleteRow = (index: number) => {
     if (tableData.length <= 1) return;
+    saveHistory();
     setTableData(tableData.filter((_, i) => i !== index));
     // Complex logic to adjust merges when deleting a row could be added here, 
     // but typically for viewing extracted tables it's edge-case. Let's just clear merges to be safe if structure changes manually
@@ -268,6 +317,7 @@ export function ExcelTable({ tableData, setTableData, merges, setMerges, rowTags
 
   const deleteColumn = (index: number) => {
     if (tableData[0]?.length <= 1) return;
+    saveHistory();
     setTableData(tableData.map(row => row.filter((_, i) => i !== index)));
     setMerges([]);
   };
@@ -390,6 +440,7 @@ export function ExcelTable({ tableData, setTableData, merges, setMerges, rowTags
           });
         });
 
+        saveHistory();
         setTableData(newData);
       }
     } catch (err) {
@@ -464,6 +515,17 @@ export function ExcelTable({ tableData, setTableData, merges, setMerges, rowTags
             >
               <ClipboardList size={16} />
               <span>Dán bảng từ Excel</span>
+            </button>
+            
+            <button
+              type="button"
+              onClick={undo}
+              disabled={history.length === 0}
+              className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed rounded transition-colors border border-gray-200"
+              title="Hoàn tác (Undo)"
+            >
+              <Undo size={16} />
+              <span>Hoàn tác</span>
             </button>
             
             {fileName && <span className="text-sm text-gray-600 font-medium truncate max-w-[200px]">{fileName}</span>}
@@ -576,6 +638,7 @@ export function ExcelTable({ tableData, setTableData, merges, setMerges, rowTags
                         type="text"
                         value={rowTags[rowIndex + 1] || ''}
                         onChange={(e) => handleTagChange(rowIndex + 1, e.target.value)}
+                        onPaste={!readOnly ? (e) => handleTagPaste(rowIndex + 1, e) : undefined}
                         placeholder="VD: ACSR 50/8"
                         className="w-full h-full min-h-[40px] text-sm px-2 outline-none bg-transparent"
                       />
