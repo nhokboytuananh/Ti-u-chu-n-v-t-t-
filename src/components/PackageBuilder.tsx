@@ -168,13 +168,13 @@ export function PackageBuilder({ savedMaterials, savedPackages, setSavedPackages
     }
   };
 
-  const getFilteredExcelData = (mat: Material) => {
-    if (!mat.excelData || mat.excelData.length === 0) return { data: [], merges: [] };
+  const getFilteredTableData = (table: import('../types').ExcelTableConfig, matId: string) => {
+    if (!table.data || table.data.length === 0) return { data: [], merges: [] };
 
-    const hiddenTagsForMat = packageHiddenTags[mat.id] || [];
+    const hiddenTagsForMat = packageHiddenTags[matId] || [];
     const isRowHidden = (rIdx: number) => {
-       if (!mat.rowTags || !mat.rowTags[rIdx]) return false;
-       const tags = mat.rowTags[rIdx].split(',').map(t => t.trim()).filter(Boolean);
+       if (!table.tags || !table.tags[rIdx]) return false;
+       const tags = table.tags[rIdx].split(',').map(t => t.trim()).filter(Boolean);
        return tags.some(tag => hiddenTagsForMat.includes(tag));
     };
 
@@ -183,17 +183,17 @@ export function PackageBuilder({ savedMaterials, savedPackages, setSavedPackages
     let newExcelData: string[][] = [];
     let newRowIndex = 0;
     
-    for (let rIdx = 0; rIdx < mat.excelData.length; rIdx++) {
+    for (let rIdx = 0; rIdx < table.data.length; rIdx++) {
         if (isRowHidden(rIdx)) {
            rMapping.push(-1); // dropped
         } else {
            rMapping.push(newRowIndex);
-           newExcelData.push(mat.excelData[rIdx]);
+           newExcelData.push(table.data[rIdx]);
            newRowIndex++;
         }
     }
     
-    for (const merge of (mat.excelMerges || [])) {
+    for (const merge of (table.merges || [])) {
         let startR = merge.s.r;
         while(startR <= merge.e.r && rMapping[startR] === -1) startR++; 
         let endR = merge.e.r;
@@ -250,50 +250,55 @@ export function PackageBuilder({ savedMaterials, savedPackages, setSavedPackages
         contentHtml += `<div class="rich-text" style="margin: 0pt; mso-margin-top-alt: 0pt; mso-margin-bottom-alt: 0pt;">${cleanedRichText}</div>`;
       }
 
-      const { data: filteredData, merges: filteredMerges } = getFilteredExcelData(mat);
+      if (mat.tables && mat.tables.length > 0) {
+        mat.tables.forEach((table, tIdx) => {
+          const { data: filteredData, merges: filteredMerges } = getFilteredTableData(table, mat.id);
+          if (filteredData && filteredData.length > 0) {
+            // II.{mat index}.2, 3, etc.
+            const sectionIdx = mat.richText ? tIdx + 2 : tIdx + 1;
+            contentHtml += `<p style="margin: 0pt; padding: 0pt; mso-margin-top-alt: 0pt; mso-margin-bottom-alt: 0pt;"><strong>II.${index + 1}.${sectionIdx}. ${table.title || 'Bảng thông số'}:</strong></p>`;
+            contentHtml += `<table border="1" cellpadding="0" cellspacing="0" style="margin: 0pt; mso-table-lspace: 0pt; mso-table-rspace: 0pt;">`;
+            filteredData.forEach((row, rIdx) => {
+              contentHtml += `<tr>`;
+              row.forEach((cell, cIdx) => {
+                let rowSpan = 1;
+                let colSpan = 1;
+                let skip = false;
 
-      if (filteredData && filteredData.length > 0) {
-        contentHtml += `<p style="margin: 0pt; padding: 0pt; mso-margin-top-alt: 0pt; mso-margin-bottom-alt: 0pt;"><strong>II.${index + 1}.2. Bảng thông số kỹ thuật:</strong></p>`;
-        contentHtml += `<table border="1" cellpadding="0" cellspacing="0" style="margin: 0pt; mso-table-lspace: 0pt; mso-table-rspace: 0pt;">`;
-        filteredData.forEach((row, rIdx) => {
-          contentHtml += `<tr>`;
-          row.forEach((cell, cIdx) => {
-            let rowSpan = 1;
-            let colSpan = 1;
-            let skip = false;
-
-            if (filteredMerges) {
-                for (const merge of filteredMerges) {
-                    if (merge.s.r === rIdx && merge.s.c === cIdx) {
-                        rowSpan = (merge.e.r - merge.s.r) + 1;
-                        colSpan = (merge.e.c - merge.s.c) + 1;
-                    } else if (
-                        rIdx >= merge.s.r && rIdx <= merge.e.r &&
-                        cIdx >= merge.s.c && cIdx <= merge.e.c
-                    ) {
-                        skip = true;
+                if (filteredMerges) {
+                    for (const merge of filteredMerges) {
+                        if (merge.s.r === rIdx && merge.s.c === cIdx) {
+                            rowSpan = (merge.e.r - merge.s.r) + 1;
+                            colSpan = (merge.e.c - merge.s.c) + 1;
+                        } else if (
+                            rIdx >= merge.s.r && rIdx <= merge.e.r &&
+                            cIdx >= merge.s.c && cIdx <= merge.e.c
+                        ) {
+                            skip = true;
+                        }
                     }
                 }
-            }
 
-            if (!skip) {
-              const cellTag = (rIdx === 0 && filteredData.length > 1) ? 'th' : 'td';
-              const rawContent = (cell || '').toString().trim();
-              
-              let displayContent = rawContent ? rawContent.replace(/\r\n/g, '<br/>').replace(/[\r\n]/g, '<br/>') : '&nbsp;';
-              
-              if (rawContent.startsWith('[IMG:data:image/') && rawContent.endsWith(']')) {
-                const base64Src = rawContent.slice(5, -1);
-                displayContent = `<img src="${base64Src}" style="max-width: 150px; max-height: 150px;" />`;
-              }
-              
-              const cellStyle = rIdx === 0 ? 'white-space: nowrap;' : '';
-              contentHtml += `<${cellTag} rowspan="${rowSpan}" colspan="${colSpan}" style="${cellStyle}"><p style="margin: 0pt; padding: 0pt; line-height: 1.1;">${displayContent}</p></${cellTag}>`;
-            }
-          });
-          contentHtml += `</tr>`;
+                if (!skip) {
+                  const cellTag = (rIdx === 0 && filteredData.length > 1) ? 'th' : 'td';
+                  const rawContent = (cell || '').toString().trim();
+                  
+                  let displayContent = rawContent ? rawContent.replace(/\r\n/g, '<br/>').replace(/[\r\n]/g, '<br/>') : '&nbsp;';
+                  
+                  if (rawContent.startsWith('[IMG:data:image/') && rawContent.endsWith(']')) {
+                    const base64Src = rawContent.slice(5, -1);
+                    displayContent = `<img src="${base64Src}" style="max-width: 150px; max-height: 150px;" />`;
+                  }
+                  
+                  const cellStyle = rIdx === 0 ? 'white-space: nowrap;' : '';
+                  contentHtml += `<${cellTag} rowspan="${rowSpan}" colspan="${colSpan}" style="${cellStyle}"><p style="margin: 0pt; padding: 0pt; line-height: 1.1;">${displayContent}</p></${cellTag}>`;
+                }
+              });
+              contentHtml += `</tr>`;
+            });
+            contentHtml += `</table>`;
+          }
         });
-        contentHtml += `</table>`;
       }
       
       contentHtml += `</div>`;
@@ -325,67 +330,76 @@ export function PackageBuilder({ savedMaterials, savedPackages, setSavedPackages
       worksheet.mergeCells(currentRow, 1, currentRow, 5); // arbitrarily merge 5 cols to give space
       currentRow += 1;
 
-      const { data: filteredData, merges: filteredMerges } = getFilteredExcelData(mat);
+      if (mat.tables && mat.tables.length > 0) {
+        mat.tables.forEach((table) => {
+          const { data: filteredData, merges: filteredMerges } = getFilteredTableData(table, mat.id);
 
-      if (filteredData && filteredData.length > 0) {
-         // Insert rows one by one
-         filteredData.forEach((row, rowIdx) => {
-             row.forEach((cellValue, colIdx) => {
-                 const cell = worksheet.getCell(currentRow + rowIdx, colIdx + 1);
-                 
-                 if (typeof cellValue === 'string' && cellValue.startsWith('[IMG:data:image/') && cellValue.endsWith(']')) {
-                    cell.value = '';
-                    const base64 = cellValue.slice(5, -1);
-                    const extMatch = base64.match(/data:image\/(.+?);base64,/);
-                    const ext = extMatch ? extMatch[1] : 'png';
-                    
-                    try {
-                      const imageId = workbook.addImage({
-                        base64: base64,
-                        extension: ext as any,
-                      });
-                      
-                      worksheet.addImage(imageId, {
-                        tl: { col: colIdx + 0.05, row: currentRow + rowIdx - 1 + 0.05 },
-                        br: { col: colIdx + 1 - 0.05, row: currentRow + rowIdx - 0.05 },
-                        editAs: 'oneCell'
-                      });
+          if (filteredData && filteredData.length > 0) {
+             const tableTitleCell = worksheet.getCell(currentRow, 1);
+             tableTitleCell.value = table.title;
+             tableTitleCell.font = { italic: true, bold: true, size: 12 };
+             currentRow += 1;
 
-                      const worksheetRow = worksheet.getRow(currentRow + rowIdx);
-                      if ((worksheetRow.height || 15) < 100) {
-                          worksheetRow.height = 100;
-                      }
-                    } catch (err) {
-                      console.error('Lỗi khi chèn ảnh vào Excel:', err);
-                      // In case of error
-                    }
-                 } else {
-                    cell.value = cellValue;
-                 }
-                 
-                 cell.alignment = { wrapText: true, vertical: 'middle' };
-                 // Adding borders
-                 cell.border = {
-                     top: {style:'thin'},
-                     left: {style:'thin'},
-                     bottom: {style:'thin'},
-                     right: {style:'thin'}
-                 };
+             // Insert rows one by one
+             filteredData.forEach((row, rowIdx) => {
+                 row.forEach((cellValue, colIdx) => {
+                     const cell = worksheet.getCell(currentRow + rowIdx, colIdx + 1);
+                     
+                     if (typeof cellValue === 'string' && cellValue.startsWith('[IMG:data:image/') && cellValue.endsWith(']')) {
+                        cell.value = '';
+                        const base64 = cellValue.slice(5, -1);
+                        const extMatch = base64.match(/data:image\/(.+?);base64,/);
+                        const ext = extMatch ? extMatch[1] : 'png';
+                        
+                        try {
+                          const imageId = workbook.addImage({
+                            base64: base64,
+                            extension: ext as any,
+                          });
+                          
+                          worksheet.addImage(imageId, {
+                            tl: { col: colIdx + 0.05, row: currentRow + rowIdx - 1 + 0.05 },
+                            br: { col: colIdx + 1 - 0.05, row: currentRow + rowIdx - 0.05 },
+                            editAs: 'oneCell'
+                          });
+
+                          const worksheetRow = worksheet.getRow(currentRow + rowIdx);
+                          if ((worksheetRow.height || 15) < 100) {
+                              worksheetRow.height = 100;
+                          }
+                        } catch (err) {
+                          console.error('Lỗi khi chèn ảnh vào Excel:', err);
+                          // In case of error
+                        }
+                     } else {
+                        cell.value = cellValue;
+                     }
+                     
+                     cell.alignment = { wrapText: true, vertical: 'middle' };
+                     // Adding borders
+                     cell.border = {
+                         top: {style:'thin'},
+                         left: {style:'thin'},
+                         bottom: {style:'thin'},
+                         right: {style:'thin'}
+                     };
+                 });
              });
-         });
-         
-         // Apply merges
-         if (filteredMerges && filteredMerges.length > 0) {
-           filteredMerges.forEach(merge => {
-              const top = currentRow + merge.s.r;
-              const left = merge.s.c + 1;
-              const bottom = currentRow + merge.e.r;
-              const right = merge.e.c + 1;
-              worksheet.mergeCells(top, left, bottom, right);
-           });
-         }
-         
-         currentRow += filteredData.length;
+             
+             // Apply merges
+             if (filteredMerges && filteredMerges.length > 0) {
+               filteredMerges.forEach(merge => {
+                  const top = currentRow + merge.s.r;
+                  const left = merge.s.c + 1;
+                  const bottom = currentRow + merge.e.r;
+                  const right = merge.e.c + 1;
+                  worksheet.mergeCells(top, left, bottom, right);
+               });
+             }
+             
+             currentRow += filteredData.length + 1; // 1 blank row between tables
+          }
+        });
       } else {
          const cell = worksheet.getCell(currentRow, 1);
          cell.value = "Không có bảng thông số";
@@ -617,10 +631,14 @@ export function PackageBuilder({ savedMaterials, savedPackages, setSavedPackages
                  if (!mat) return null;
                  
                  const tagsSet = new Set<string>();
-                 if (mat.rowTags) {
-                   Object.values(mat.rowTags).forEach(tagStr => {
-                     const tags = tagStr.split(',').map(t => t.trim()).filter(Boolean);
-                     tags.forEach(t => tagsSet.add(t));
+                 if (mat.tables) {
+                   mat.tables.forEach(table => {
+                     if (table.tags) {
+                       Object.values(table.tags).forEach(tagStr => {
+                         const tags = tagStr.split(',').map((t: string) => t.trim()).filter(Boolean);
+                         tags.forEach((t: string) => tagsSet.add(t));
+                       });
+                     }
                    });
                  }
                  const uniqueTags = Array.from(tagsSet);
