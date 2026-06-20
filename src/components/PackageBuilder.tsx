@@ -764,7 +764,7 @@ export function PackageBuilder({ savedMaterials, savedPackages, setSavedPackages
                                      type="checkbox"
                                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5 cursor-pointer"
                                      checked={!isTableHidden}
-                                     onChange={(e) => toggleTable(mat.id, table.id, !e.target.checked)}
+                                     onChange={(e) => toggleTable(mat.id, table.id, e.target.checked)}
                                   />
                                   <span className={`text-sm font-medium ${isTableHidden ? 'text-gray-400 line-through opacity-70' : 'text-gray-700'}`}>
                                     {table.title || 'Bảng thông số'}
