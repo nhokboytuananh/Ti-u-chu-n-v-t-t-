@@ -475,7 +475,7 @@ export function ExcelTable({ tableData, setTableData, merges, setMerges, rowTags
       )}
 
       <div className="overflow-x-auto p-1">
-        <table className={`w-full text-left border-collapse ${readOnly ? 'min-w-full' : 'min-w-max'}`}>
+        <table className="w-full text-left border-collapse min-w-full">
           <thead>
             {tableData.slice(0, 1).map((row, rowIndex) => (
               <tr key={rowIndex} className="bg-gray-100/50" style={{ height: rowHeights[rowIndex] || undefined }}>
@@ -484,7 +484,7 @@ export function ExcelTable({ tableData, setTableData, merges, setMerges, rowTags
                   if (hideCell) return null;
                   
                   return (
-                  <th key={colIndex} rowSpan={rowSpan} colSpan={colSpan} className="p-0 border border-gray-300 font-semibold text-gray-700 relative group bg-gray-50 align-top h-[1px]" style={{ width: colWidths[colIndex] || (!readOnly && colIndex === 0 ? 150 : undefined), minWidth: colWidths[colIndex] || (!readOnly ? 150 : undefined) }}>
+                  <th key={colIndex} rowSpan={rowSpan} colSpan={colSpan} className="p-0 border border-gray-300 font-semibold text-gray-700 relative group bg-gray-50 align-top h-[1px]" style={{ width: colWidths[colIndex] || undefined, minWidth: colWidths[colIndex] || 60 }}>
                     {!readOnly && (
                       <>
                         <div

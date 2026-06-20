@@ -204,17 +204,18 @@ export function PackageBuilder({ savedMaterials, savedPackages, setSavedPackages
         <meta charset='utf-8'>
         <title>${packageName || 'Tieu_Chuan_Goi_Thau'}</title>
         <style>
-          body { font-family: 'Times New Roman', Times, serif; font-size: 13pt; line-height: 1.15; }
-          h2 { font-size: 16pt; font-weight: bold; margin-bottom: 6pt; text-align: left; }
-          .rich-text p, .rich-text div, .rich-text li { margin-top: 2pt; margin-bottom: 2pt; line-height: 1.15; text-align: justify; }
-          ul, ol { list-style-type: none; padding-left: 0; margin-left: 0; margin-top: 2pt; margin-bottom: 2pt; }
-          li { list-style-type: none; margin-left: 0; padding-left: 0; margin-top: 2pt; margin-bottom: 2pt; line-height: 1.15; text-align: justify; }
-          table { width: 100%; border-collapse: collapse; margin-top: 10pt; margin-bottom: 20pt; border: 1px solid black; }
+          body { font-family: 'Times New Roman', Times, serif; font-size: 13pt; line-height: 1.15; margin: 0; padding: 0; }
+          h2 { font-size: 16pt; font-weight: bold; margin: 0pt 0pt 6pt 0pt; text-align: left; }
+          p { margin: 0pt; mso-margin-top-alt: 0pt; mso-margin-bottom-alt: 0pt; }
+          .rich-text p, .rich-text div, .rich-text li { line-height: 1.15; }
+          ul, ol { margin-top: 0pt; margin-bottom: 0pt; }
+          li { line-height: 1.15; }
+          table { width: 100%; border-collapse: collapse; margin: 0pt; mso-table-lspace: 0pt; mso-table-rspace: 0pt; border: 1px solid black; }
           table, th, td { border: 1px solid black; }
           th, td { padding: 2pt 4pt; mso-padding-alt: 2pt 4pt 2pt 4pt; text-align: left; vertical-align: middle; }
-          th p, td p, th div, td div { margin: 0pt !important; padding: 0pt !important; line-height: 1.0 !important; text-align: left; }
+          th p, td p, th div, td div { margin: 0pt !important; padding: 0pt !important; mso-margin-top-alt: 0pt !important; mso-margin-bottom-alt: 0pt !important; line-height: 1.0 !important; text-align: left; }
           th { font-weight: bold; background-color: transparent; }
-          .material-section { margin-bottom: 40px; page-break-inside: avoid; }
+          .material-section { margin-bottom: 20pt; page-break-inside: avoid; }
         </style>
       </head>
       <body>
@@ -225,22 +226,16 @@ export function PackageBuilder({ savedMaterials, savedPackages, setSavedPackages
       contentHtml += `<h2>II.${index + 1}. ${mat.name || 'Vật tư chưa có tên'}</h2>`;
       
       if (mat.richText) {
-        contentHtml += `<div><strong>II.${index + 1}.1. Yêu cầu chung:</strong></div>`;
-        const cleanedRichText = mat.richText
-          .replace(/<ul[^>]*>/gi, '')
-          .replace(/<\/ul>/gi, '')
-          .replace(/<ol[^>]*>/gi, '')
-          .replace(/<\/ol>/gi, '')
-          .replace(/<li[^>]*>/gi, '<div style="margin-top: 2pt; margin-bottom: 2pt;">')
-          .replace(/<\/li>/gi, '</div>');
-        contentHtml += `<div class="rich-text" style="margin-top: 2pt;">${cleanedRichText}</div>`;
+        contentHtml += `<p style="margin: 0pt; padding: 0pt; mso-margin-top-alt: 0pt; mso-margin-bottom-alt: 0pt;"><strong>II.${index + 1}.1. Yêu cầu chung:</strong></p>`;
+        const cleanedRichText = mat.richText;
+        contentHtml += `<div class="rich-text" style="margin: 0pt; mso-margin-top-alt: 0pt; mso-margin-bottom-alt: 0pt;">${cleanedRichText}</div>`;
       }
 
       const { data: filteredData, merges: filteredMerges } = getFilteredExcelData(mat);
 
       if (filteredData && filteredData.length > 0) {
-        contentHtml += `<div style="margin-top: 15px;"><strong>II.${index + 1}.2. Bảng thông số kỹ thuật:</strong></div>`;
-        contentHtml += `<table border="1" cellpadding="0" cellspacing="0">`;
+        contentHtml += `<p style="margin: 0pt; padding: 0pt; mso-margin-top-alt: 0pt; mso-margin-bottom-alt: 0pt;"><strong>II.${index + 1}.2. Bảng thông số kỹ thuật:</strong></p>`;
+        contentHtml += `<table border="1" cellpadding="0" cellspacing="0" style="margin: 0pt; mso-table-lspace: 0pt; mso-table-rspace: 0pt;">`;
         filteredData.forEach((row, rIdx) => {
           contentHtml += `<tr>`;
           row.forEach((cell, cIdx) => {

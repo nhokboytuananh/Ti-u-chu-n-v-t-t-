@@ -30,11 +30,15 @@ export function RichTextEditor({ value, onChange, readOnly }: RichTextEditorProp
     }
   };
 
-  const formatText = (command: string) => {
-    document.execCommand(command, false, undefined);
+  const formatText = (command: string, value: string | undefined = undefined) => {
+    document.execCommand(command, false, value);
     editorRef.current?.focus();
     handleInput();
   };
+
+  const fonts = [
+    'Arial', 'Times New Roman', 'Helvetica', 'Tahoma', 'Verdana', 'Georgia'
+  ];
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -81,28 +85,6 @@ export function RichTextEditor({ value, onChange, readOnly }: RichTextEditorProp
           });
           doc.querySelectorAll('td').forEach(td => {
             td.className = "border border-black p-0";
-            td.style.backgroundColor = '';
-          });
-          
-          doc.querySelectorAll('*').forEach(el => {
-              if (el instanceof HTMLElement) {
-                 el.style.backgroundColor = '';
-              }
-          });
-
-          // Unpack lists if they cause layout jumps. We just preserve text indentation
-          doc.querySelectorAll('li').forEach(li => {
-              const div = document.createElement('div');
-              div.innerHTML = `- ${li.innerHTML}`;
-              div.style.marginLeft = '1rem';
-              li.replaceWith(div);
-          });
-          doc.querySelectorAll('ul, ol').forEach(list => {
-              const frag = document.createDocumentFragment();
-              while (list.firstChild) {
-                  frag.appendChild(list.firstChild);
-              }
-              list.replaceWith(frag);
           });
 
           html = doc.body.innerHTML;
@@ -172,15 +154,41 @@ export function RichTextEditor({ value, onChange, readOnly }: RichTextEditorProp
           >
             <AlignRight size={18} />
           </button>
+          <button
+            type="button"
+            onClick={() => formatText('justifyFull')}
+            className="p-1.5 text-gray-600 hover:bg-gray-200 rounded transition-colors w-8 h-8 flex items-center justify-center font-serif"
+            title="Căn đều 2 bên"
+          >
+            ≡
+          </button>
           
           <div className="w-px h-6 bg-gray-300 mx-1"></div>
           
-          <div className="relative flex items-center">
+          <input 
+            type="color" 
+            onChange={(e) => formatText('foreColor', e.target.value)} 
+            className="w-8 h-8 p-0 border-0 rounded cursor-pointer"
+            title="Màu chữ" 
+          />
+          
+          <select 
+            onChange={(e) => formatText('fontName', e.target.value)}
+            className="p-1.5 text-sm border border-gray-300 rounded bg-white"
+            title="Font chữ"
+          >
+            <option value="">Font chữ...</option>
+            {fonts.map(font => <option key={font} value={font}>{font}</option>)}
+          </select>
+          
+          <div className="w-px h-6 bg-gray-300 mx-1"></div>
+          
+          <div className="relative flex items-center group">
             <input
               type="file"
               accept=".docx"
               onChange={handleFileUpload}
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
               title="Nhập từ file Word"
             />
             <button
@@ -192,21 +200,23 @@ export function RichTextEditor({ value, onChange, readOnly }: RichTextEditorProp
             </button>
           </div>
           {fileName && <span className="text-xs text-gray-500 ml-2 truncate max-w-[200px] flex items-center gap-1"><FileText size={12}/> {fileName}</span>}
+          
+          <div className="w-full text-xs text-amber-600 mt-1 italic font-medium">
+            * Lưu ý: Nút "Nhập từ Word" sẽ lấy định dạng mặc định (có thể mất màu sắc). Để giữ nguyên định dạng, VUI LÒNG MỞ FILE WORD, COPY VÀ DÁN TRỰC TIẾP (Ctrl+V) vào khung soạn thảo.
+          </div>
         </div>
       )}
 
       {/* Editor Content */}
-      <div className="bg-gray-100 overflow-y-auto overflow-x-auto p-4 sm:p-8 flex justify-center h-[400px] min-h-[200px] resize-y relative will-change-transform border-b border-white">
+      <div className="bg-white overflow-y-auto overflow-x-auto p-4 flex justify-center h-[400px] min-h-[200px] resize-y relative will-change-transform border-t border-white">
         <div
           ref={editorRef}
           contentEditable={!readOnly}
           onInput={handleInput}
           onBlur={handleInput}
-          className="bg-white shadow-md outline-none word-editor-content shrink-0"
+          className="bg-white outline-none word-editor-content shrink-0 w-full"
           style={{
-            width: '210mm',
-            minHeight: '297mm',
-            padding: '20mm 20mm', // standard word margins roughly
+            minHeight: '100%',
             lineHeight: '1.2'
           }}
           placeholder="Nhập yêu cầu chung..."
