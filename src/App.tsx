@@ -772,7 +772,7 @@ export default function App() {
                 <div className="space-y-4">
                   {auditLogsData.map((log) => (
                      <div key={log.id} className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
-                       <div className="flex justify-between items-start mb-2">
+                       <div className="flex justify-between items-start">
                          <div className="flex gap-2 items-center">
                             <span className={`text-xs font-bold uppercase px-2 py-1 rounded ${log.action === 'create' ? 'bg-emerald-100 text-emerald-700' : log.action === 'update' ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700'}`}>
                                {log.action === 'create' ? 'Tạo mới' : log.action === 'update' ? 'Cập nhật' : 'Xóa'}
@@ -780,10 +780,6 @@ export default function App() {
                             <span className="text-sm font-semibold text-gray-800">{log.updatedBy || 'Người dùng không xác định'}</span>
                          </div>
                          <span className="text-sm text-gray-500">{new Date(log.updatedAt).toLocaleString('vi-VN')}</span>
-                       </div>
-                       <div className="text-sm text-gray-600 mt-2 bg-gray-50 p-2 rounded max-h-40 overflow-y-auto font-mono text-xs border border-gray-100">
-                          <strong>Dữ liệu mới:</strong>
-                          <pre className="mt-1 whitespace-pre-wrap">{JSON.stringify(log.newData, null, 2)}</pre>
                        </div>
                      </div>
                   ))}
