@@ -35,4 +35,5 @@ export interface BiddingPackage {
   name: string;
   materialIds: string[];
   hiddenTags?: Record<string, string[]>;
+  hiddenTables?: Record<string, string[]>;
 }
