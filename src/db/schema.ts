@@ -28,5 +28,6 @@ export const packages = pgTable("packages", {
   name: text("name").notNull(),
   materialIds: jsonb("material_ids").notNull(),
   hiddenTags: jsonb("hidden_tags"),
+  hiddenTables: jsonb("hidden_tables"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
