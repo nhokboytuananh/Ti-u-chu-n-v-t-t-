@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FileDown, GripVertical, CheckSquare, Square, Trash2, Save, FileSpreadsheet, Search } from 'lucide-react';
+import { FileDown, GripVertical, CheckSquare, Square, Trash2, Save, FileSpreadsheet, Search, Loader2 } from 'lucide-react';
 import * as xlsx from 'xlsx';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
@@ -21,6 +21,7 @@ export function PackageBuilder({ savedMaterials, savedPackages, setSavedPackages
   const [searchMaterialCode, setSearchMaterialCode] = useState('');
   const [searchMaterialName, setSearchMaterialName] = useState('');
   const [searchPackage, setSearchPackage] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
   
   // Modals
   const [deletePackageId, setDeletePackageId] = useState<string | null>(null);
@@ -80,6 +81,7 @@ export function PackageBuilder({ savedMaterials, savedPackages, setSavedPackages
         hiddenTags: packageHiddenTags,
       };
 
+      setIsSaving(true);
       try {
         const { auth } = await import('../lib/firebase.ts');
         const token = await auth.currentUser?.getIdToken();
@@ -109,6 +111,8 @@ export function PackageBuilder({ savedMaterials, savedPackages, setSavedPackages
       } catch (err) {
         console.error(err);
         alert('Lỗi lưu gói thầu');
+      } finally {
+        setIsSaving(false);
       }
     });
   };
@@ -555,9 +559,14 @@ export function PackageBuilder({ savedMaterials, savedPackages, setSavedPackages
               {isAuthenticated && (
                 <button
                   onClick={handleSavePackage}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition-all shadow"
+                  disabled={isSaving}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-lg text-sm font-semibold transition-all shadow"
                 >
-                  <Save size={16} /> Lưu gói thầu
+                  {isSaving ? (
+                    <><Loader2 size={16} className="animate-spin" /> Đang lưu...</>
+                  ) : (
+                    <><Save size={16} /> Lưu gói thầu</>
+                  )}
                 </button>
               )}
             </div>

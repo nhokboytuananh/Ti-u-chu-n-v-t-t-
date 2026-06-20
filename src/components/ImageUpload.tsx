@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { UploadCloud, X, Image as ImageIcon, Download, RotateCw, ZoomIn } from 'lucide-react';
+import { UploadCloud, X, Image as ImageIcon, Download, RotateCw, ZoomIn, Loader2 } from 'lucide-react';
 
 interface ImageUploadProps {
   images: { url: string; name: string }[];
@@ -9,25 +9,74 @@ interface ImageUploadProps {
 
 export function ImageUpload({ images, setImages, readOnly }: ImageUploadProps) {
   const [previewIndex, setPreviewIndex] = useState<number | null>(null);
+  const [isCompressing, setIsCompressing] = useState(false);
 
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (!files) return;
-
-    Array.from(files).forEach((file: File) => {
-      if (!file.type.startsWith('image/')) return;
-      
+  const compressImage = (file: File): Promise<string> => {
+    return new Promise((resolve) => {
       const reader = new FileReader();
       reader.onload = (e) => {
-        if (e.target?.result) {
-          setImages(prev => [...prev, { url: e.target!.result as string, name: file.name }]);
-        }
+        if (!e.target?.result) return resolve('');
+        
+        const img = new window.Image();
+        img.onload = () => {
+          const MAX_WIDTH = 1200;
+          const MAX_HEIGHT = 1200;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height *= MAX_WIDTH / width;
+              width = MAX_WIDTH;
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width *= MAX_HEIGHT / height;
+              height = MAX_HEIGHT;
+            }
+          }
+
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(img, 0, 0, width, height);
+            resolve(canvas.toDataURL('image/jpeg', 0.85));
+          } else {
+            resolve(e.target!.result as string);
+          }
+        };
+        img.src = e.target.result as string;
       };
       reader.readAsDataURL(file);
     });
-    
-    // Reset input
-    event.target.value = '';
+  };
+
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files) return;
+
+    setIsCompressing(true);
+    try {
+      const newImages = await Promise.all(
+        Array.from(files).map(async (file: File) => {
+          if (!file.type.startsWith('image/')) return null;
+          const compressedDataUrl = await compressImage(file);
+          return { url: compressedDataUrl, name: file.name };
+        })
+      );
+
+      const validImages = newImages.filter(img => img !== null) as { url: string; name: string }[];
+      
+      if (validImages.length > 0) {
+        setImages(prev => [...prev, ...validImages]);
+      }
+    } finally {
+      setIsCompressing(false);
+      // Reset input
+      event.target.value = '';
+    }
   };
 
   const removeImage = (index: number, e: React.MouseEvent) => {
@@ -82,11 +131,22 @@ export function ImageUpload({ images, setImages, readOnly }: ImageUploadProps) {
             accept="image/*"
             multiple
             onChange={handleImageUpload}
-            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+            disabled={isCompressing}
+            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10 disabled:cursor-not-allowed"
           />
-          <UploadCloud className="w-8 h-8 text-blue-500 mb-2 group-hover:scale-110 transition-transform" />
-          <p className="text-sm font-medium text-gray-700">Kéo thả hoặc nhấn để tải ảnh lên</p>
-          <p className="text-xs text-gray-500 mt-1">Hỗ trợ PNG, JPG, GIF</p>
+          {isCompressing ? (
+            <>
+              <Loader2 className="w-8 h-8 text-blue-500 mb-2 animate-spin" />
+              <p className="text-sm font-medium text-gray-700">Đang xử lý ảnh...</p>
+              <p className="text-xs text-gray-500 mt-1">Vui lòng đợi</p>
+            </>
+          ) : (
+            <>
+              <UploadCloud className="w-8 h-8 text-blue-500 mb-2 group-hover:scale-110 transition-transform" />
+              <p className="text-sm font-medium text-gray-700">Kéo thả hoặc nhấn để tải ảnh lên</p>
+              <p className="text-xs text-gray-500 mt-1">Hỗ trợ PNG, JPG, GIF</p>
+            </>
+          )}
         </div>
       )}
 
