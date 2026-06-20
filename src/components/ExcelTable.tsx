@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import * as xlsx from 'xlsx';
-import { Upload, Plus, Trash2, Image as ImageIcon, X, ZoomIn, ClipboardList, Undo } from 'lucide-react';
+import { Upload, Plus, Trash2, Image as ImageIcon, X, ZoomIn, ClipboardList, Undo, ArrowUp, ArrowDown, ArrowLeft, ArrowRight } from 'lucide-react';
 
 interface ExcelTableProps {
   tableData: string[][];
@@ -147,6 +147,7 @@ export function ExcelTable({ tableData, setTableData, merges, setMerges, rowTags
   const [zoomedImage, setZoomedImage] = useState<string | null>(null);
   
   const [history, setHistory] = useState<{tableData: string[][], rowTags: Record<number, string>}[]>([]);
+  const [activeCell, setActiveCell] = useState<{r: number, c: number} | null>(null);
 
   const saveHistory = () => {
     setHistory(prev => [...prev, { 
@@ -161,6 +162,53 @@ export function ExcelTable({ tableData, setTableData, merges, setMerges, rowTags
     setHistory(prev => prev.slice(0, -1));
     setTableData(lastState.tableData);
     if (setRowTags) setRowTags(lastState.rowTags);
+  };
+
+  const insertRow = (index: number) => {
+    saveHistory();
+    const colsCount = tableData[0]?.length || 4;
+    const newData = [...tableData];
+    newData.splice(index, 0, Array(colsCount).fill(''));
+    
+    const newMerges = merges.map(m => {
+       const nM = {...m, s: {...m.s}, e: {...m.e}};
+       if (nM.s.r >= index) nM.s.r++;
+       if (nM.e.r >= index) nM.e.r++;
+       return nM;
+    });
+    setMerges(newMerges);
+    setTableData(newData);
+    
+    if (setRowTags) {
+      const newTags: Record<number, string> = {};
+      Object.keys(rowTags).forEach(k => {
+        const numK = parseInt(k);
+        if (numK >= index) {
+           newTags[numK + 1] = rowTags[numK];
+        } else {
+           newTags[numK] = rowTags[numK];
+        }
+      });
+      setRowTags(newTags);
+    }
+  };
+
+  const insertColumn = (index: number) => {
+    saveHistory();
+    const newData = tableData.map(row => {
+      const newRow = [...row];
+      newRow.splice(index, 0, '');
+      return newRow;
+    });
+    setTableData(newData);
+    
+    const newMerges = merges.map(m => {
+       const nM = {...m, s: {...m.s}, e: {...m.e}};
+       if (nM.s.c >= index) nM.s.c++;
+       if (nM.e.c >= index) nM.e.c++;
+       return nM;
+    });
+    setMerges(newMerges);
   };
 
   const handleCellChange = (rowIndex: number, colIndex: number, value: string) => {
@@ -356,9 +404,11 @@ export function ExcelTable({ tableData, setTableData, merges, setMerges, rowTags
     if (isImage && base64) {
       return (
         <div 
-          className="relative p-2 w-full h-full flex items-center justify-center group/img" 
+          className={`relative p-2 w-full h-full flex items-center justify-center group/img ${activeCell?.r === rowIndex && activeCell?.c === colIndex ? 'ring-2 ring-blue-500 bg-blue-50/20' : ''}`}
           tabIndex={!readOnly ? 0 : undefined} 
           onPaste={!readOnly ? (e) => handlePaste(rowIndex, colIndex, e) : undefined}
+          onFocus={() => !readOnly && setActiveCell({r: rowIndex, c: colIndex})}
+          onClick={() => !readOnly && setActiveCell({r: rowIndex, c: colIndex})}
         >
           <img 
             src={base64} 
@@ -381,7 +431,10 @@ export function ExcelTable({ tableData, setTableData, merges, setMerges, rowTags
     }
 
     return (
-      <div className="relative w-full h-full group/text">
+      <div 
+        className={`relative w-full h-full group/text ${activeCell?.r === rowIndex && activeCell?.c === colIndex ? 'ring-2 ring-blue-500 bg-white' : ''}`}
+        onClick={() => !readOnly && setActiveCell({r: rowIndex, c: colIndex})}
+      >
         {readOnly ? (
           <div className="w-full h-full p-2 whitespace-pre-wrap break-words text-gray-800">
             {cell}
@@ -390,9 +443,10 @@ export function ExcelTable({ tableData, setTableData, merges, setMerges, rowTags
           <textarea
             value={cell}
             readOnly={readOnly}
+            onFocus={() => setActiveCell({r: rowIndex, c: colIndex})}
             onChange={(e) => handleCellChange(rowIndex, colIndex, e.target.value)}
             onPaste={!readOnly ? (e) => handlePaste(rowIndex, colIndex, e) : undefined}
-            className="w-full h-full p-2 bg-transparent outline-none transition-shadow focus:bg-white focus:ring-2 focus:ring-blue-500 resize-none"
+            className="w-full h-full p-2 bg-transparent outline-none transition-shadow focus:bg-white focus:ring-0 resize-none"
             placeholder={isHeader ? `Cột ${colIndex + 1}` : ''}
             style={{ fieldSizing: 'content', minHeight: '100%' } as any}
           />
@@ -531,7 +585,44 @@ export function ExcelTable({ tableData, setTableData, merges, setMerges, rowTags
             {fileName && <span className="text-sm text-gray-600 font-medium truncate max-w-[200px]">{fileName}</span>}
           </div>
           
-          <div className="flex gap-2">
+          <div className="flex gap-1 items-center">
+            {activeCell && (
+              <div className="flex bg-blue-50 text-blue-700 rounded-md border border-blue-200 p-0.5 mr-2">
+                <button
+                  type="button"
+                  onClick={() => insertRow(activeCell.r)}
+                  className="p-1 hover:bg-blue-100 rounded tooltip-trigger"
+                  title="Thêm hàng phía trên ô chọn"
+                >
+                  <ArrowUp size={16} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => insertRow(activeCell.r + 1)}
+                  className="p-1 hover:bg-blue-100 rounded"
+                  title="Thêm hàng phía dưới ô chọn"
+                >
+                  <ArrowDown size={16} />
+                </button>
+                <div className="w-px bg-blue-200 mx-0.5"></div>
+                <button
+                  type="button"
+                  onClick={() => insertColumn(activeCell.c)}
+                  className="p-1 hover:bg-blue-100 rounded"
+                  title="Thêm cột phía trước ô chọn"
+                >
+                  <ArrowLeft size={16} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => insertColumn(activeCell.c + 1)}
+                  className="p-1 hover:bg-blue-100 rounded"
+                  title="Thêm cột phía sau ô chọn"
+                >
+                  <ArrowRight size={16} />
+                </button>
+              </div>
+            )}
             <button
               type="button"
               onClick={addRow}
