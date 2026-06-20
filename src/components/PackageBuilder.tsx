@@ -16,6 +16,7 @@ interface PackageBuilderProps {
 export function PackageBuilder({ savedMaterials, savedPackages, setSavedPackages, isAuthenticated, requireAuth }: PackageBuilderProps) {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [packageHiddenTags, setPackageHiddenTags] = useState<Record<string, string[]>>({});
+  const [packageHiddenTables, setPackageHiddenTables] = useState<Record<string, string[]>>({});
   const [packageName, setPackageName] = useState('');
   const [currentPackageId, setCurrentPackageId] = useState<string | null>(null);
   const [searchMaterialCode, setSearchMaterialCode] = useState('');
@@ -79,6 +80,7 @@ export function PackageBuilder({ savedMaterials, savedPackages, setSavedPackages
         name: packageName,
         materialIds: selectedIds,
         hiddenTags: packageHiddenTags,
+        hiddenTables: packageHiddenTables,
       };
 
       setIsSaving(true);
@@ -124,6 +126,7 @@ export function PackageBuilder({ savedMaterials, savedPackages, setSavedPackages
     const validIds = pkg.materialIds.filter(id => savedMaterials.some(m => m.id === id));
     setSelectedIds(validIds);
     setPackageHiddenTags(pkg.hiddenTags || {});
+    setPackageHiddenTables(pkg.hiddenTables || {});
   };
 
   const createNewPackage = () => {
@@ -132,6 +135,7 @@ export function PackageBuilder({ savedMaterials, savedPackages, setSavedPackages
       setPackageName('');
       setSelectedIds([]);
       setPackageHiddenTags({});
+      setPackageHiddenTables({});
     });
   };
 
@@ -251,11 +255,16 @@ export function PackageBuilder({ savedMaterials, savedPackages, setSavedPackages
       }
 
       if (mat.tables && mat.tables.length > 0) {
+        let tableOffset = 0;
         mat.tables.forEach((table, tIdx) => {
+          const isTableHidden = (packageHiddenTables[mat.id] || []).includes(table.id);
+          if (isTableHidden) return;
+          
           const { data: filteredData, merges: filteredMerges } = getFilteredTableData(table, mat.id);
           if (filteredData && filteredData.length > 0) {
             // II.{mat index}.2, 3, etc.
-            const sectionIdx = mat.richText ? tIdx + 2 : tIdx + 1;
+            const sectionIdx = mat.richText ? tableOffset + 2 : tableOffset + 1;
+            tableOffset++;
             contentHtml += `<p style="margin: 0pt; padding: 0pt; mso-margin-top-alt: 0pt; mso-margin-bottom-alt: 0pt;"><strong>II.${index + 1}.${sectionIdx}. ${table.title || 'Bảng thông số'}:</strong></p>`;
             contentHtml += `<table border="1" cellpadding="0" cellspacing="0" style="margin: 0pt; mso-table-lspace: 0pt; mso-table-rspace: 0pt;">`;
             filteredData.forEach((row, rIdx) => {
@@ -331,10 +340,15 @@ export function PackageBuilder({ savedMaterials, savedPackages, setSavedPackages
       currentRow += 1;
 
       if (mat.tables && mat.tables.length > 0) {
+        let hasExportedTable = false;
         mat.tables.forEach((table) => {
+          const isTableHidden = (packageHiddenTables[mat.id] || []).includes(table.id);
+          if (isTableHidden) return;
+          
           const { data: filteredData, merges: filteredMerges } = getFilteredTableData(table, mat.id);
 
           if (filteredData && filteredData.length > 0) {
+             hasExportedTable = true;
              const tableTitleCell = worksheet.getCell(currentRow, 1);
              tableTitleCell.value = table.title;
              tableTitleCell.font = { italic: true, bold: true, size: 12 };
@@ -400,6 +414,12 @@ export function PackageBuilder({ savedMaterials, savedPackages, setSavedPackages
              currentRow += filteredData.length + 1; // 1 blank row between tables
           }
         });
+        if (!hasExportedTable) {
+           const cell = worksheet.getCell(currentRow, 1);
+           cell.value = "Không có bảng thông số";
+           cell.font = { italic: true };
+           currentRow += 2;
+        }
       } else {
          const cell = worksheet.getCell(currentRow, 1);
          cell.value = "Không có bảng thông số";
@@ -655,6 +675,18 @@ export function PackageBuilder({ savedMaterials, savedPackages, setSavedPackages
                      }
                    });
                  };
+
+                 const hiddenTablesForMat = packageHiddenTables[mat.id] || [];
+                 const toggleTable = (matId: string, tableId: string, checked: boolean) => {
+                   setPackageHiddenTables(prev => {
+                     const currentHidden = prev[matId] || [];
+                     if (checked) {
+                       return { ...prev, [matId]: currentHidden.filter(id => id !== tableId) };
+                     } else {
+                       return { ...prev, [matId]: [...currentHidden, tableId] };
+                     }
+                   });
+                 };
                  
                  return (
                    <div key={`${id}-${index}`} className="flex flex-col p-3 bg-white rounded-lg border border-gray-200 shadow-sm gap-2">
@@ -710,28 +742,59 @@ export function PackageBuilder({ savedMaterials, savedPackages, setSavedPackages
                        </button>
                      </div>
                      
-                     {uniqueTags.length > 0 && (
-                       <div className="ml-14 border-t pt-2 mt-1">
-                         <span className="text-xs text-gray-500 font-medium mb-1 block">Tham biến hiển thị:</span>
-                         <div className="flex flex-wrap gap-2">
-                           {uniqueTags.map(tag => {
-                              const isHidden = hiddenTagsForMat.includes(tag);
-                              return (
-                                <label key={tag} className={`flex items-center gap-1 text-xs px-2 py-1 rounded cursor-pointer border ${isHidden ? 'bg-gray-50 text-gray-400 border-gray-200' : 'bg-blue-50 text-blue-700 border-blue-200'}`}>
-                                  <input 
-                                    type="checkbox" 
-                                    className="hidden"
-                                    checked={!isHidden} 
-                                    onChange={() => toggleTag(mat.id, tag)} 
+                     {mat.tables?.length > 0 && (
+                       <div className="ml-14 border-t border-gray-100 pt-2 mt-1">
+                         <span className="text-xs text-gray-500 font-medium mb-2 block">Bảng thông số & Tham biến hiển thị:</span>
+                         {mat.tables.map(table => {
+                            const isTableHidden = hiddenTablesForMat.includes(table.id);
+                            
+                            const tableTagsSet = new Set<string>();
+                            if (table.tags) {
+                               Object.values(table.tags).forEach(tagStr => {
+                                   const tags = tagStr.split(',').map((t: string) => t.trim()).filter(Boolean);
+                                   tags.forEach((t: string) => tableTagsSet.add(t));
+                               });
+                            }
+                            const uniqueTableTags = Array.from(tableTagsSet);
+
+                            return (
+                              <div key={table.id} className="mb-2 pb-2 border-b border-gray-50 last:mb-0 last:pb-0 last:border-0 border-dashed">
+                                <label className="flex items-center gap-2 cursor-pointer mb-1.5 w-fit hover:bg-gray-50 px-1 py-0.5 rounded transition-colors -ml-1">
+                                  <input
+                                     type="checkbox"
+                                     className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5 cursor-pointer"
+                                     checked={!isTableHidden}
+                                     onChange={(e) => toggleTable(mat.id, table.id, !e.target.checked)}
                                   />
-                                  <div className="w-3 h-3 flex items-center justify-center shrink-0">
-                                    {isHidden ? <Square size={12} /> : <CheckSquare size={12} />}
-                                  </div>
-                                  <span>{tag}</span>
+                                  <span className={`text-sm font-medium ${isTableHidden ? 'text-gray-400 line-through opacity-70' : 'text-gray-700'}`}>
+                                    {table.title || 'Bảng thông số'}
+                                  </span>
                                 </label>
-                              );
-                           })}
-                         </div>
+                                
+                                {uniqueTableTags.length > 0 && !isTableHidden && (
+                                  <div className="flex flex-wrap gap-2 ml-5">
+                                    {uniqueTableTags.map(tag => {
+                                       const isHidden = hiddenTagsForMat.includes(tag);
+                                       return (
+                                         <label key={tag} className={`flex items-center gap-1 text-xs px-2 py-1 rounded cursor-pointer border transition-colors ${isHidden ? 'bg-gray-50 text-gray-400 border-gray-200' : 'bg-blue-50 text-blue-700 border-blue-200'}`}>
+                                           <input 
+                                             type="checkbox" 
+                                             className="hidden"
+                                             checked={!isHidden} 
+                                             onChange={() => toggleTag(mat.id, tag)} 
+                                           />
+                                           <div className={`w-3 h-3 flex items-center justify-center shrink-0 rounded-[2px] border ${isHidden ? 'bg-white border-gray-300 text-transparent' : 'bg-blue-600 border-blue-600 text-white'}`}>
+                                             <CheckSquare size={12} className={isHidden ? 'opacity-0' : 'opacity-100'} />
+                                           </div>
+                                           <span>{tag}</span>
+                                         </label>
+                                       );
+                                    })}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                         })}
                        </div>
                      )}
                    </div>
