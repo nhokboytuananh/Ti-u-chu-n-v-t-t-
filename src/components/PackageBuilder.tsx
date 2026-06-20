@@ -257,7 +257,8 @@ export function PackageBuilder({ savedMaterials, savedPackages, setSavedPackages
       if (mat.tables && mat.tables.length > 0) {
         let tableOffset = 0;
         mat.tables.forEach((table, tIdx) => {
-          const isTableHidden = (packageHiddenTables[mat.id] || []).includes(table.id);
+          const uniqueTableId = table.id || String(tIdx);
+          const isTableHidden = (packageHiddenTables[mat.id] || []).includes(uniqueTableId);
           if (isTableHidden) return;
           
           const { data: filteredData, merges: filteredMerges } = getFilteredTableData(table, mat.id);
@@ -341,8 +342,9 @@ export function PackageBuilder({ savedMaterials, savedPackages, setSavedPackages
 
       if (mat.tables && mat.tables.length > 0) {
         let hasExportedTable = false;
-        mat.tables.forEach((table) => {
-          const isTableHidden = (packageHiddenTables[mat.id] || []).includes(table.id);
+        mat.tables.forEach((table, tIdx) => {
+          const uniqueTableId = table.id || String(tIdx);
+          const isTableHidden = (packageHiddenTables[mat.id] || []).includes(uniqueTableId);
           if (isTableHidden) return;
           
           const { data: filteredData, merges: filteredMerges } = getFilteredTableData(table, mat.id);
@@ -745,8 +747,9 @@ export function PackageBuilder({ savedMaterials, savedPackages, setSavedPackages
                      {mat.tables?.length > 0 && (
                        <div className="ml-14 border-t border-gray-100 pt-2 mt-1">
                          <span className="text-xs text-gray-500 font-medium mb-2 block">Bảng thông số & Tham biến hiển thị:</span>
-                         {mat.tables.map(table => {
-                            const isTableHidden = hiddenTablesForMat.includes(table.id);
+                         {mat.tables.map((table, tIdx) => {
+                            const uniqueTableId = table.id || String(tIdx);
+                            const isTableHidden = hiddenTablesForMat.includes(uniqueTableId);
                             
                             const tableTagsSet = new Set<string>();
                             if (table.tags) {
@@ -758,13 +761,13 @@ export function PackageBuilder({ savedMaterials, savedPackages, setSavedPackages
                             const uniqueTableTags = Array.from(tableTagsSet);
 
                             return (
-                              <div key={table.id} className="mb-2 pb-2 border-b border-gray-50 last:mb-0 last:pb-0 last:border-0 border-dashed">
+                              <div key={uniqueTableId} className="mb-2 pb-2 border-b border-gray-50 last:mb-0 last:pb-0 last:border-0 border-dashed">
                                 <label className="flex items-center gap-2 cursor-pointer mb-1.5 w-fit hover:bg-gray-50 px-1 py-0.5 rounded transition-colors -ml-1">
                                   <input
                                      type="checkbox"
                                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5 cursor-pointer"
                                      checked={!isTableHidden}
-                                     onChange={(e) => toggleTable(mat.id, table.id, e.target.checked)}
+                                     onChange={(e) => toggleTable(mat.id, uniqueTableId, e.target.checked)}
                                   />
                                   <span className={`text-sm font-medium ${isTableHidden ? 'text-gray-400 line-through opacity-70' : 'text-gray-700'}`}>
                                     {table.title || 'Bảng thông số'}
