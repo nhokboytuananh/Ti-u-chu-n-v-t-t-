@@ -260,7 +260,14 @@ export function PackageBuilder({ savedMaterials, savedPackages, setSavedPackages
             if (!skip) {
               const cellTag = (rIdx === 0 && filteredData.length > 1) ? 'th' : 'td';
               const rawContent = (cell || '').toString().trim();
-              const displayContent = rawContent ? rawContent.replace(/\r\n/g, '<br/>').replace(/[\r\n]/g, '<br/>') : '&nbsp;';
+              
+              let displayContent = rawContent ? rawContent.replace(/\r\n/g, '<br/>').replace(/[\r\n]/g, '<br/>') : '&nbsp;';
+              
+              if (rawContent.startsWith('[IMG:data:image/') && rawContent.endsWith(']')) {
+                const base64Src = rawContent.slice(5, -1);
+                displayContent = `<img src="${base64Src}" style="max-width: 150px; max-height: 150px;" />`;
+              }
+              
               const cellStyle = rIdx === 0 ? 'white-space: nowrap;' : '';
               contentHtml += `<${cellTag} rowspan="${rowSpan}" colspan="${colSpan}" style="${cellStyle}"><p style="margin: 0pt; padding: 0pt; line-height: 1.1;">${displayContent}</p></${cellTag}>`;
             }

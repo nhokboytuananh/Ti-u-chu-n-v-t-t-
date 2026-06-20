@@ -36,6 +36,25 @@ export function RichTextEditor({ value, onChange, readOnly }: RichTextEditorProp
     handleInput();
   };
 
+  const applyLineHeight = (height: string) => {
+    const selection = window.getSelection();
+    if (!selection || !selection.rangeCount) return;
+    
+    let currentNode = selection.anchorNode;
+    while (currentNode && currentNode !== editorRef.current) {
+      if (currentNode instanceof HTMLElement && (currentNode.tagName === 'P' || currentNode.tagName === 'DIV' || currentNode.tagName === 'LI')) {
+        currentNode.style.lineHeight = height;
+        handleInput();
+        return;
+      }
+      currentNode = currentNode.parentNode;
+    }
+    
+    // If no block found, just set it globally or wrap
+    document.execCommand('insertHTML', false, `<div style="line-height: ${height}">${selection.toString()}</div>`);
+    handleInput();
+  };
+
   const fonts = [
     'Arial', 'Times New Roman', 'Helvetica', 'Tahoma', 'Verdana', 'Georgia'
   ];
@@ -181,6 +200,18 @@ export function RichTextEditor({ value, onChange, readOnly }: RichTextEditorProp
             {fonts.map(font => <option key={font} value={font}>{font}</option>)}
           </select>
           
+          <select 
+            onChange={(e) => applyLineHeight(e.target.value)}
+            className="p-1.5 text-sm border border-gray-300 rounded bg-white"
+            title="Giãn cách dòng"
+          >
+            <option value="">Giãn dòng...</option>
+            <option value="1.0">1.0</option>
+            <option value="1.15">1.15</option>
+            <option value="1.5">1.5</option>
+            <option value="2.0">2.0</option>
+          </select>
+          
           <div className="w-px h-6 bg-gray-300 mx-1"></div>
           
           <div className="relative flex items-center group">
@@ -201,8 +232,8 @@ export function RichTextEditor({ value, onChange, readOnly }: RichTextEditorProp
           </div>
           {fileName && <span className="text-xs text-gray-500 ml-2 truncate max-w-[200px] flex items-center gap-1"><FileText size={12}/> {fileName}</span>}
           
-          <div className="w-full text-xs text-amber-600 mt-1 italic font-medium">
-            * Lưu ý: Nút "Nhập từ Word" sẽ lấy định dạng mặc định (có thể mất màu sắc). Để giữ nguyên định dạng, VUI LÒNG MỞ FILE WORD, COPY VÀ DÁN TRỰC TIẾP (Ctrl+V) vào khung soạn thảo.
+          <div className="w-full text-sm text-amber-800 bg-amber-50 p-2 mt-2 rounded border border-amber-200">
+            <strong>* Lưu ý:</strong> Nút "Nhập từ Word" sẽ lấy định dạng mặc định (có thể mất màu sắc). Để giữ nguyên định dạng, <strong>VUI LÒNG MỞ FILE WORD, COPY VÀ DÁN TRỰC TIẾP (Ctrl+V)</strong> vào khung soạn thảo.
           </div>
         </div>
       )}

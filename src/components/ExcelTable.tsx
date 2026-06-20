@@ -478,13 +478,13 @@ export function ExcelTable({ tableData, setTableData, merges, setMerges, rowTags
         <table className="w-full text-left border-collapse min-w-full">
           <thead>
             {tableData.slice(0, 1).map((row, rowIndex) => (
-              <tr key={rowIndex} className="bg-gray-100/50" style={{ height: rowHeights[rowIndex] || undefined }}>
+              <tr key={rowIndex} className="bg-white" style={{ height: rowHeights[rowIndex] || undefined }}>
                 {row.map((cell, colIndex) => {
                   const { hideCell, rowSpan, colSpan } = getCellRenderingArgs(rowIndex, colIndex);
                   if (hideCell) return null;
                   
                   return (
-                  <th key={colIndex} rowSpan={rowSpan} colSpan={colSpan} className="p-0 border border-gray-300 font-semibold text-gray-700 relative group bg-gray-50 align-top h-[1px]" style={{ width: colWidths[colIndex] || undefined, minWidth: colWidths[colIndex] || 60 }}>
+                  <th key={colIndex} rowSpan={rowSpan} colSpan={colSpan} className="p-0 border border-gray-300 font-semibold text-gray-700 relative group bg-white align-top h-[1px]" style={{ width: colWidths[colIndex] || undefined, minWidth: colWidths[colIndex] || 60 }}>
                     {!readOnly && (
                       <>
                         <div
@@ -512,7 +512,7 @@ export function ExcelTable({ tableData, setTableData, merges, setMerges, rowTags
                 )})}
                 {!readOnly && (
                   <>
-                    <th className="w-[40px] border border-gray-300 bg-gray-50"></th>
+                    <th className="w-[40px] border border-gray-300 bg-white"></th>
                     <th className="w-[150px] border border-gray-300 bg-red-50 p-2 text-center text-sm font-semibold text-red-700 whitespace-nowrap" title="Nhập tham biến để ẩn/hiện hàng khi xuất">
                       Tham biến
                     </th>
@@ -523,7 +523,7 @@ export function ExcelTable({ tableData, setTableData, merges, setMerges, rowTags
           </thead>
           <tbody>
             {tableData.slice(1).map((row, rowIndex) => (
-              <tr key={rowIndex + 1} className="hover:bg-gray-50/50 transition-colors group" style={{ height: rowHeights[rowIndex + 1] || undefined }}>
+              <tr key={rowIndex + 1} className="bg-white hover:bg-gray-50/50 transition-colors group" style={{ height: rowHeights[rowIndex + 1] || undefined }}>
                 {row.map((cell, colIndex) => {
                   const { hideCell, rowSpan, colSpan } = getCellRenderingArgs(rowIndex + 1, colIndex);
                   if (hideCell) return null;
