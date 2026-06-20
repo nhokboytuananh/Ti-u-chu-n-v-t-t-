@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Save, ClipboardList, Database, Info, FileText, Image as ImageIcon, AlignLeft, Plus, Edit2, Trash2, List, FileArchive, Search, X, User, LogOut, Key, Loader2 } from 'lucide-react';
+import { Save, ClipboardList, Database, Info, FileText, Image as ImageIcon, AlignLeft, Plus, Edit2, Trash2, List, FileArchive, Search, X, User, LogOut, Key, Loader2, LayoutDashboard, Settings, Bell, MessageSquare, ChevronDown, Menu } from 'lucide-react';
 import { RichTextEditor } from './components/RichTextEditor';
 import { ExcelTable } from './components/ExcelTable';
 import { ImageUpload } from './components/ImageUpload';
@@ -412,42 +412,145 @@ export default function App() {
     .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 
   return (
-    <div className="min-h-screen bg-gray-100 text-gray-900 font-sans selection:bg-blue-100 selection:text-blue-900 flex flex-col md:flex-row">
-      {/* Sidebar - Saved Items */}
-      <aside className={`${isSidebarOpen ? 'w-full md:w-80' : 'w-0'} transition-all duration-300 bg-white border-r border-gray-200 shadow-sm flex flex-col z-40 overflow-hidden shrink-0`}>
-        <div className="p-4 border-b border-gray-100 bg-gray-50 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-2 text-gray-800 font-semibold">
-            <List size={18} className="text-blue-600" />
-            <span>Đã lưu ({savedMaterials.length})</span>
-          </div>
-          <button 
-            onClick={resetForm}
-            className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
-            title="Thêm Vật Tư Mới"
-          >
-            <Plus size={18} />
-          </button>
-        </div>
-
-        <div className="p-3 border-b border-gray-200 shrink-0">
-           <div className="relative text-sm">
-             <Search className="absolute left-2.5 top-2.5 text-gray-400" size={16} />
-             <input
-               type="text"
-               placeholder="Tìm mã hoặc tên..."
-               value={searchSidebar}
-               onChange={e => setSearchSidebar(e.target.value)}
-               className="w-full pl-9 pr-8 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none block"
-             />
-             {searchSidebar && (
-               <button onClick={() => setSearchSidebar('')} className="absolute right-2 top-2 text-gray-400 hover:text-gray-600 p-0.5">
-                 <X size={16}/>
-               </button>
-             )}
+    <div className="h-screen w-full bg-[#f4f7fc] text-gray-800 font-sans selection:bg-indigo-100 selection:text-indigo-900 flex overflow-hidden">
+        {/* NEW Main Navigation Sidebar */}
+        <aside className="w-64 bg-white border-r border-gray-100 flex flex-col shrink-0 z-50 shadow-sm hidden md:flex">
+           <div className="h-16 flex items-center justify-center px-6 border-b border-gray-100 bg-white">
+              <div className="flex items-center gap-2">
+                <div className="flex-shrink-0 w-11 h-11 rounded-full border-2 border-[#10498B] flex items-center justify-center bg-white shadow-sm overflow-hidden">
+                  <div className="relative w-full h-full flex items-center justify-center">
+                    <svg viewBox="0 0 100 100" className="w-[125%] h-[125%] absolute">
+                      <path d="M 50 4 L 62 38 L 96 50 L 62 62 L 50 96 L 38 62 L 4 50 L 38 38 Z" fill="#10498B" />
+                      <path d="M 50 22 L 57 43 L 78 50 L 57 57 L 50 78 L 43 57 L 22 50 L 43 43 Z" fill="#E31837" />
+                      <path d="M 50 36 L 53.5 46.5 L 64 50 L 53.5 53.5 L 50 64 L 46.5 53.5 L 36 50 L 46.5 46.5 Z" fill="#FFED00" />
+                    </svg>
+                  </div>
+                </div>
+                <div className="flex flex-col justify-center ml-0.5">
+                  <div className="flex items-baseline font-black leading-none gap-[1px]">
+                    <span className="text-[#10498B] text-[24px] tracking-tight">EVN</span>
+                    <span className="text-[#E31837] text-[24px] tracking-tight">CPC</span>
+                  </div>
+                  <span className="text-[#10498B] font-black italic text-[11px] leading-tight tracking-[0.06em] mt-[3px]">PC QUANG NGAI</span>
+                </div>
+              </div>
            </div>
-        </div>
+           
+           <div className="px-4 py-6">
+             <div className="w-full bg-indigo-50 rounded-xl p-4 flex items-center justify-between mb-2">
+                <div className="flex items-center gap-3">
+                   <div className="bg-white p-2 rounded-lg shadow-sm text-indigo-600 border border-indigo-100">
+                      <LayoutDashboard size={20} />
+                   </div>
+                   <div>
+                      <p className="text-xs text-gray-500 font-medium">System</p>
+                      <p className="text-sm font-bold text-indigo-900">Dashboard</p>
+                   </div>
+                </div>
+                <ChevronDown size={16} className="text-indigo-400" />
+             </div>
+           </div>
+           
+           <nav className="flex-1 overflow-y-auto px-4 space-y-1.5 pb-6">
+              <p className="text-[11px] font-bold text-gray-400 mb-3 px-2 uppercase tracking-wider">WORKSPACE</p>
+              
+              <button 
+                 onClick={() => setActiveTab('materials')}
+                 className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${activeTab === 'materials' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'}`}
+              >
+                 <div className="flex items-center gap-3">
+                    <Database size={18} className={activeTab === 'materials' ? 'text-white' : 'text-gray-400'} />
+                    Quản lý Vật tư
+                 </div>
+                 {activeTab === 'materials' && <div className="w-1.5 h-1.5 rounded-full bg-white opacity-80 decoration-pulse" />}
+              </button>
+              
+              <button 
+                 onClick={() => setActiveTab('package')}
+                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${activeTab === 'package' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'}`}
+              >
+                 <FileArchive size={18} className={activeTab === 'package' ? 'text-white' : 'text-gray-400'} />
+                 Tạo Gói Thầu
+              </button>
+           </nav>
+        </aside>
 
-        <div className="overflow-y-auto flex-1 p-2 space-y-2">
+        {/* Main Interface */}
+        <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
+            {/* Top Bar matching screenshot */}
+            <header className="h-16 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-between px-4 sm:px-6 shrink-0 z-40 text-white shadow-sm">
+              <div className="flex items-center gap-4">
+                 <button className="p-1.5 hover:bg-white/10 rounded-lg md:hidden transition-colors">
+                    <Menu size={20} />
+                 </button>
+                 <div className="hidden sm:block">
+                    <p className="text-[11px] text-white/80 font-medium tracking-wide uppercase">Welcome back</p>
+                    <h2 className="font-bold text-base leading-tight">{isAuthenticated ? auth.currentUser?.displayName || 'User' : 'Guest'}</h2>
+                 </div>
+              </div>
+              <div className="flex items-center gap-3 lg:gap-5">
+                 {isAuthenticated ? (
+                     <div className="flex items-center gap-3 pl-2 lg:pl-4 border-l border-white/20">
+                         <button onClick={handleLogout} className="flex items-center gap-3 tooltip-trigger hover:opacity-80 transition-opacity" title="Đăng xuất">
+                           <img src={auth.currentUser?.photoURL || 'https://api.dicebear.com/7.x/avataaars/svg'} alt="avatar" className="w-9 h-9 rounded-xl bg-white/20 object-cover border border-white/20 shadow-sm" />
+                           <div className="text-left hidden lg:block">
+                             <p className="text-sm font-bold leading-tight line-clamp-1">{auth.currentUser?.displayName || 'User'}</p>
+                             <p className="text-xs text-white/70 leading-tight">Admin</p>
+                           </div>
+                         </button>
+                     </div>
+                 ) : (
+                     <div className="flex items-center gap-2 pl-2 lg:pl-4 border-l border-white/20">
+                         <button
+                           onClick={() => setShowLoginModal(true)}
+                           className="flex items-center gap-2 px-4 py-1.5 bg-white text-indigo-600 hover:bg-white/90 rounded-full transition-colors text-sm font-bold shadow-sm"
+                         >
+                           <User size={16} />
+                           <span>Login</span>
+                         </button>
+                     </div>
+                 )}
+              </div>
+            </header>
+
+            {/* Inner Content Workspace */}
+            <main className="flex-1 flex overflow-hidden relative">
+                
+                {activeTab === 'materials' && (
+                  <aside className={`${isSidebarOpen ? 'w-full md:w-80' : 'w-0'} transition-all duration-300 bg-white border-r border-gray-200 shadow-sm flex flex-col z-30 overflow-hidden shrink-0`}>
+                    <div className="p-4 border-b border-gray-100 bg-gray-50 flex items-center justify-between shrink-0">
+                      <div className="flex items-center gap-2 text-gray-800 font-semibold">
+                        <Database size={18} className="text-indigo-600" />
+                        <span>Danh Sách ({savedMaterials.length})</span>
+                      </div>
+                      <button 
+                        onClick={resetForm}
+                        className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors"
+                        title="Thêm Vật Tư Mới"
+                      >
+                        <Plus size={18} />
+                      </button>
+                    </div>
+
+                    <div className="p-3 border-b border-gray-200 shrink-0">
+                       <div className="relative text-sm">
+                         <Search className="absolute left-2.5 top-2.5 text-gray-400" size={16} />
+                         <input
+                           type="text"
+                           placeholder="Tìm mã hoặc tên..."
+                           value={searchSidebar}
+                           onChange={e => setSearchSidebar(e.target.value)}
+                           className="w-full pl-9 pr-8 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none block bg-gray-50"
+                         />
+                         {searchSidebar && (
+                           <button onClick={() => setSearchSidebar('')} className="absolute right-2 top-2 text-gray-400 hover:text-gray-600 p-0.5">
+                             <X size={16}/>
+                           </button>
+                         )}
+                       </div>
+                    </div>
+
+                    <div className="overflow-y-auto flex-1 p-2 space-y-2">
           {filteredMaterials.length === 0 ? (
             <div className="px-4 py-8 text-center text-sm text-gray-500">
               {searchSidebar ? "Không tìm thấy vật tư." : "Chưa có vật tư nào được lưu."}
@@ -503,57 +606,23 @@ export default function App() {
 
 
       </aside>
+                )}
 
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <header className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm shrink-0">
+      {/* Editor Content Workspace */}
+      <div className={`flex-1 flex flex-col min-w-0 overflow-hidden bg-white ${activeTab === 'materials' ? 'md:rounded-tl-2xl border-l border-t border-gray-200 shadow-inner' : ''}`}>
+        
+        {activeTab === 'materials' && (
+        <header className="bg-white border-b border-gray-100 z-30 shrink-0">
           <div className="px-4 sm:px-6 h-16 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <button 
-                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                className="p-2 text-gray-500 hover:bg-gray-100 rounded-md md:hidden"
-              >
-                <List size={20} />
-              </button>
-              <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center text-white shadow-inner hidden sm:flex shrink-0">
-                <ClipboardList size={22} />
-              </div>
               <div className="hidden sm:block">
-                <h1 className="text-lg sm:text-xl font-bold tracking-tight text-gray-900 leading-none truncate pr-2">Tiêu chuẩn Kỹ thuật</h1>
+                <h1 className="text-xl font-bold tracking-tight text-gray-800 leading-none truncate pr-2">Tiêu chuẩn Kỹ thuật</h1>
+                <p className="text-xs text-gray-500 mt-1">Biên soạn và quản lý thông số vật tư</p>
               </div>
-            </div>
-            <div className="flex flex-col sm:flex-row items-center gap-2 shrink-0">
-              
-              {/* Tab Navigation */}
-              <div className="flex bg-gray-100 p-1 rounded-lg">
-                <button
-                  onClick={() => setActiveTab('materials')}
-                  className={`flex items-center justify-center gap-2 px-3 sm:px-4 py-2 rounded-md font-medium text-sm transition-colors ${
-                    activeTab === 'materials' 
-                      ? 'bg-white text-blue-600 shadow-sm ring-1 ring-black/5' 
-                      : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'
-                  }`}
-                >
-                  <ClipboardList size={16} />
-                  <span className="hidden sm:inline">Quản lý</span>
-                </button>
-                <button
-                  onClick={() => setActiveTab('package')}
-                  className={`flex items-center justify-center gap-2 px-3 sm:px-4 py-2 rounded-md font-medium text-sm transition-colors ${
-                    activeTab === 'package' 
-                      ? 'bg-white text-blue-600 shadow-sm ring-1 ring-black/5' 
-                      : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'
-                  }`}
-                >
-                  <FileArchive size={16} />
-                  <span className="hidden sm:inline">Gói thầu</span>
-                </button>
-              </div>
-
             </div>
             
-            {activeTab === 'materials' && isAuthenticated && (
-              <div className="flex items-center gap-2 shrink-0 ml-4">
+            {isAuthenticated && (
+              <div className="flex items-center gap-2 shrink-0">
                  <button 
                     onClick={resetForm}
                     type="button"
@@ -568,7 +637,7 @@ export default function App() {
                   disabled={isSaving}
                   className={`flex items-center gap-2 px-4 sm:px-5 py-2 rounded-lg text-sm font-semibold transition-all shadow hover:shadow-md ring-2 ring-transparent focus:ring-offset-2 focus:outline-none ${
                     isEditing 
-                      ? 'bg-blue-600 hover:bg-blue-700 text-white focus:ring-blue-500 disabled:opacity-75 disabled:cursor-not-allowed'
+                      ? 'bg-indigo-600 hover:bg-indigo-700 text-white focus:ring-indigo-500 disabled:opacity-75 disabled:cursor-not-allowed'
                       : 'bg-emerald-600 hover:bg-emerald-700 text-white focus:ring-emerald-500'
                   }`}
                 >
@@ -591,30 +660,11 @@ export default function App() {
                 )}
               </div>
             )}
-            
-            <div className="flex items-center gap-2 shrink-0 ml-4 border-l border-gray-200 pl-4 h-8">
-              {isAuthenticated ? (
-                  <button
-                    onClick={handleLogout}
-                    className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
-                    title="Đăng xuất"
-                  >
-                    <LogOut size={16} />
-                  </button>
-              ) : (
-                <button
-                  onClick={() => setShowLoginModal(true)}
-                  className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
-                >
-                  <User size={16} />
-                  <span className="hidden sm:inline">Đăng nhập</span>
-                </button>
-              )}
-            </div>
           </div>
         </header>
+        )}
 
-        <main className="flex-1 overflow-y-auto w-full p-4 sm:p-6 lg:p-8 bg-gray-50/50">
+        <div className="flex-1 overflow-y-auto w-full p-4 sm:p-6 lg:p-8 bg-gray-50/30">
           {activeTab === 'package' ? (
             <PackageBuilder 
                savedMaterials={savedMaterials} 
@@ -823,7 +873,9 @@ export default function App() {
               </form>
             </div>
           )}
-        </main>
+        </div>
+      </div>
+      </main>
       </div>
 
       {/* Login Modal */}
