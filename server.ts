@@ -221,18 +221,20 @@ async function startServer() {
   // Admin API to save packages
   app.post("/api/packages", requireAuth, async (req: AuthRequest, res) => {
     try {
-      const { id, name, materialIds, hiddenTags } = req.body;
+      const { id, name, materialIds, hiddenTags, hiddenTables } = req.body;
       const data = await db.insert(packages).values({
         id,
         name,
         materialIds: materialIds || [],
-        hiddenTags: hiddenTags || {}
+        hiddenTags: hiddenTags || {},
+        hiddenTables: hiddenTables || {}
       }).onConflictDoUpdate({
         target: packages.id,
         set: {
           name,
           materialIds: materialIds || [],
-          hiddenTags: hiddenTags || {}
+          hiddenTags: hiddenTags || {},
+          hiddenTables: hiddenTables || {}
         }
       }).returning();
       res.json(data[0]);
