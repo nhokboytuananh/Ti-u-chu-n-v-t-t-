@@ -124,12 +124,18 @@ async function startServer() {
       
       // Log the audit event
       try {
+        const simplifyData = (d: any) => {
+          if (!d) return null;
+          const { images, excelData, excel_data, ...rest } = d;
+          return { ...rest, _note: "Images and formatting data omitted for brevity" };
+        };
+
         await db.insert(materialAuditLogs).values({
            id: crypto.randomUUID(),
            materialId: id,
            action: existingMaterial ? 'update' : 'create',
-           previousData: existingMaterial || null,
-           newData: data[0],
+           previousData: simplifyData(existingMaterial),
+           newData: simplifyData(data[0]),
            updatedBy: userEmail
         });
       } catch(auditErr) {
@@ -161,11 +167,17 @@ async function startServer() {
       
       if (existingMaterial) {
           try {
+             const simplifyData = (d: any) => {
+               if (!d) return null;
+               const { images, excelData, excel_data, ...rest } = d;
+               return { ...rest, _note: "Images and formatting data omitted for brevity" };
+             };
+
              await db.insert(materialAuditLogs).values({
                 id: crypto.randomUUID(),
                 materialId: materialId,
                 action: 'delete',
-                previousData: existingMaterial,
+                previousData: simplifyData(existingMaterial),
                 newData: null,
                 updatedBy: userEmail
              });
