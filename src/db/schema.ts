@@ -8,6 +8,7 @@ export const materials = pgTable("materials", {
   notes: text("notes"),
   excelData: jsonb("excel_data").notNull(),
   images: jsonb("images").notNull(),
+  docRequirements: jsonb("doc_requirements"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
   updatedBy: text("updated_by"),
