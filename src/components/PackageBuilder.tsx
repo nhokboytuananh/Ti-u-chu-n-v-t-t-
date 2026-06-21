@@ -244,6 +244,78 @@ export function PackageBuilder({ savedMaterials, savedPackages, setSavedPackages
       <body>
     `;
 
+    // Add Summary Document Requirements Table
+    const hasAnyDocs = selectedMaterials.some(m => {
+        const reqs = m.docRequirements || {};
+        if (reqs.typeTest || reqs.catalog || reqs.endUser || reqs.iso) return true;
+        if (reqs.variants) {
+           return Object.values(reqs.variants).some(v => v.typeTest || v.catalog || v.endUser || v.iso);
+        }
+        return false;
+    });
+
+    if (hasAnyDocs) {
+        contentHtml += `<h2 style="font-size: 14pt;">Danh mục các tài liệu chứng minh nguồn gốc và chất lượng hàng hóa</h2>`;
+        contentHtml += `<table border="1" cellpadding="0" cellspacing="0" style="margin-bottom: 20pt; text-align: center; border-collapse: collapse; width: 100%; mso-table-lspace: 0pt; mso-table-rspace: 0pt;">`;
+        contentHtml += `
+          <tr>
+            <th style="width: 5%; text-align: center; padding: 0pt;"><p style="margin: 0pt; line-height: 1.0; text-align: center;">TT</p></th>
+            <th style="width: 35%; text-align: center; padding: 0pt;"><p style="margin: 0pt; line-height: 1.0; text-align: center;">Tên vật tư - thiết bị</p></th>
+            <th style="width: 15%; text-align: center; padding: 0pt;"><p style="margin: 0pt; line-height: 1.0; text-align: center;">Biên bản thí nghiệm điển hình</p></th>
+            <th style="width: 15%; text-align: center; padding: 0pt;"><p style="margin: 0pt; line-height: 1.0; text-align: center;">Tài liệu kỹ thuật (bản vẽ, Catalogue, ...)</p></th>
+            <th style="width: 15%; text-align: center; padding: 0pt;"><p style="margin: 0pt; line-height: 1.0; text-align: center;">Xác nhận của đơn vị sử dụng cuối cùng</p></th>
+            <th style="width: 15%; text-align: center; padding: 0pt;"><p style="margin: 0pt; line-height: 1.0; text-align: center;">Chứng chỉ quản lý chất lượng ISO 9001 của nhà sản xuất</p></th>
+          </tr>
+        `;
+        selectedMaterials.forEach((mat, index) => {
+            const reqs = mat.docRequirements || {};
+            
+            // Lấy danh sách các biến (tags) cho vật tư này
+            const tagsSet = new Set<string>();
+            if (mat.tables) {
+                mat.tables.forEach(table => {
+                    if (table.tags) {
+                        Object.values(table.tags).forEach(tagStr => {
+                            const tags = tagStr.split(',').map((t: string) => t.trim()).filter(Boolean);
+                            tags.forEach((t: string) => tagsSet.add(t));
+                        });
+                    }
+                });
+            }
+            const hiddenTagsForMat = packageHiddenTags[mat.id] || [];
+            const activeVariants = Array.from(tagsSet).filter(tag => !hiddenTagsForMat.includes(tag));
+            const hasVariants = activeVariants.length > 0;
+
+            contentHtml += `
+              <tr>
+                <td style="text-align: center; padding: 0pt;"><p style="margin: 0pt; line-height: 1.0; text-align: center;">${index + 1}</p></td>
+                <td style="text-align: left; padding: 0pt;"><p style="margin: 0pt; line-height: 1.0; text-align: left;">${mat.name || ''}</p></td>
+                <td style="text-align: center; font-family: Arial; padding: 0pt;"><p style="margin: 0pt; line-height: 1.0; text-align: center;">${hasVariants ? '' : (reqs.typeTest ? 'x' : '')}</p></td>
+                <td style="text-align: center; font-family: Arial; padding: 0pt;"><p style="margin: 0pt; line-height: 1.0; text-align: center;">${hasVariants ? '' : (reqs.catalog ? 'x' : '')}</p></td>
+                <td style="text-align: center; font-family: Arial; padding: 0pt;"><p style="margin: 0pt; line-height: 1.0; text-align: center;">${hasVariants ? '' : (reqs.endUser ? 'x' : '')}</p></td>
+                <td style="text-align: center; font-family: Arial; padding: 0pt;"><p style="margin: 0pt; line-height: 1.0; text-align: center;">${hasVariants ? '' : (reqs.iso ? 'x' : '')}</p></td>
+              </tr>
+            `;
+
+            if (hasVariants) {
+                activeVariants.forEach(variant => {
+                    const varReqs = reqs.variants && reqs.variants[variant] ? reqs.variants[variant] : {};
+                    contentHtml += `
+                      <tr>
+                        <td style="text-align: center; padding: 0pt;"><p style="margin: 0pt; line-height: 1.0; text-align: center;"></p></td>
+                        <td style="text-align: left; padding: 0pt;"><p style="margin: 0pt; line-height: 1.0; text-align: left;">${variant}</p></td>
+                        <td style="text-align: center; font-family: Arial; padding: 0pt;"><p style="margin: 0pt; line-height: 1.0; text-align: center;">${varReqs.typeTest ? 'x' : ''}</p></td>
+                        <td style="text-align: center; font-family: Arial; padding: 0pt;"><p style="margin: 0pt; line-height: 1.0; text-align: center;">${varReqs.catalog ? 'x' : ''}</p></td>
+                        <td style="text-align: center; font-family: Arial; padding: 0pt;"><p style="margin: 0pt; line-height: 1.0; text-align: center;">${varReqs.endUser ? 'x' : ''}</p></td>
+                        <td style="text-align: center; font-family: Arial; padding: 0pt;"><p style="margin: 0pt; line-height: 1.0; text-align: center;">${varReqs.iso ? 'x' : ''}</p></td>
+                      </tr>
+                    `;
+                });
+            }
+        });
+        contentHtml += `</table>`;
+    }
+
     selectedMaterials.forEach((mat, index) => {
       contentHtml += `<div class="material-section">`;
       contentHtml += `<h2>II.${index + 1}. ${mat.name || 'Vật tư chưa có tên'}</h2>`;
