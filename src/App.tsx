@@ -47,6 +47,7 @@ export default function App() {
             tables: tables,
             images: d.images || [],
             notes: d.notes || '',
+            docRequirements: d.docRequirements || {},
             updatedBy: d.updatedBy,
             updatedAt: d.updatedAt
           };
