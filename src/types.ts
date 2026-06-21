@@ -16,6 +16,18 @@ export interface Material {
   tables: ExcelTableConfig[];
   images: { url: string; name: string }[];
   notes: string;
+  docRequirements?: {
+    typeTest?: boolean;
+    catalog?: boolean;
+    endUser?: boolean;
+    iso?: boolean;
+    variants?: Record<string, {
+      typeTest?: boolean;
+      catalog?: boolean;
+      endUser?: boolean;
+      iso?: boolean;
+    }>;
+  };
   updatedBy?: string;
   updatedAt?: string;
 }
