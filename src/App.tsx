@@ -880,7 +880,7 @@ export default function App() {
                                 <div key={variant} className="border border-gray-200 rounded-lg p-4 bg-gray-50/50">
                                   <h3 className="font-semibold text-gray-800 mb-3 pb-2 border-b border-gray-200 flex items-center gap-2">
                                     <span className="w-2 h-2 rounded-full bg-blue-500"></span>
-                                    Tham biến: {variant}
+                                    Thể loại: {variant}
                                   </h3>
                                   <div className="space-y-2.5">
                                     <label className={`flex items-center justify-between gap-3 ${!isEditing ? 'cursor-default' : 'cursor-pointer'}`}>
