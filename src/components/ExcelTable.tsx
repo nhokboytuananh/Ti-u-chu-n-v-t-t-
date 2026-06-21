@@ -135,8 +135,10 @@ export function ExcelTable({ tableData, setTableData, merges, setMerges, rowTags
         const finalData = cleanedData.slice(0, lastValidRow + 1);
 
         if (finalData.length > 0) {
+          saveHistory();
           setTableData(finalData);
           setMerges(adjustedMerges);
+          if (setRowTags) setRowTags({});
         }
       }
     };
@@ -361,6 +363,19 @@ export function ExcelTable({ tableData, setTableData, merges, setMerges, rowTags
     // Complex logic to adjust merges when deleting a row could be added here, 
     // but typically for viewing extracted tables it's edge-case. Let's just clear merges to be safe if structure changes manually
     setMerges([]); 
+    
+    if (setRowTags) {
+      const newTags: Record<number, string> = {};
+      Object.keys(rowTags).forEach(k => {
+        const numK = parseInt(k);
+        if (numK < index) {
+          newTags[numK] = rowTags[numK];
+        } else if (numK > index) {
+          newTags[numK - 1] = rowTags[numK];
+        }
+      });
+      setRowTags(newTags);
+    }
   };
 
   const deleteColumn = (index: number) => {
@@ -463,43 +478,50 @@ export function ExcelTable({ tableData, setTableData, merges, setMerges, rowTags
     );
   };
 
+  const processPastedText = (textData: string) => {
+    const rows = textData.split(/\r?\n/).map(row => row.split('\t'));
+    let cleanRows = rows;
+    if (cleanRows.length > 0 && cleanRows[cleanRows.length - 1].length === 1 && cleanRows[cleanRows.length - 1][0] === '') {
+      cleanRows = cleanRows.slice(0, -1);
+    }
+    
+    if (cleanRows.length === 0) return;
+
+    const newData = [...tableData].map(r => [...r]);
+    const startRow = 0;
+    const startCol = 0;
+
+    cleanRows.forEach((rowData, rIdx) => {
+      const targetRow = startRow + rIdx;
+      if (targetRow >= newData.length) {
+        newData.push(Array(newData[0].length).fill(''));
+      }
+      
+      rowData.forEach((cellData, cIdx) => {
+        const targetCol = startCol + cIdx;
+        if (targetCol >= newData[0].length) {
+          newData.forEach(r => r.push(''));
+        }
+        newData[targetRow][targetCol] = cellData;
+      });
+    });
+
+    saveHistory();
+    setTableData(newData);
+  };
+
   const handlePasteFromClipboard = async () => {
     try {
+      if (!navigator.clipboard || !navigator.clipboard.readText) {
+         throw new Error('Clipboard API not supported');
+      }
       const textData = await navigator.clipboard.readText();
       if (textData) {
-        const rows = textData.split(/\r?\n/).map(row => row.split('\t'));
-        let cleanRows = rows;
-        if (cleanRows.length > 0 && cleanRows[cleanRows.length - 1].length === 1 && cleanRows[cleanRows.length - 1][0] === '') {
-          cleanRows = cleanRows.slice(0, -1);
-        }
-        
-        if (cleanRows.length === 0) return;
-
-        const newData = [...tableData].map(r => [...r]);
-        const startRow = 0;
-        const startCol = 0;
-
-        cleanRows.forEach((rowData, rIdx) => {
-          const targetRow = startRow + rIdx;
-          if (targetRow >= newData.length) {
-            newData.push(Array(newData[0].length).fill(''));
-          }
-          
-          rowData.forEach((cellData, cIdx) => {
-            const targetCol = startCol + cIdx;
-            if (targetCol >= newData[0].length) {
-              newData.forEach(r => r.push(''));
-            }
-            newData[targetRow][targetCol] = cellData;
-          });
-        });
-
-        saveHistory();
-        setTableData(newData);
+        processPastedText(textData);
       }
     } catch (err) {
       console.error('Failed to read clipboard contents: ', err);
-      alert('Không thể đọc dữ liệu từ clipboard. Vui lòng cấp quyền truy cập clipboard hoặc nhấn Ctrl+V vào ô đầu tiên để dán.');
+      alert('Trình duyệt đang chặn quyền đọc clipboard. Bạn vui lòng click vào ô đầu tiên và bấm Ctrl+V để dán dữ liệu. (Hoặc dán trong thẻ mở rộng - Open New Tab)');
     }
   };
 
