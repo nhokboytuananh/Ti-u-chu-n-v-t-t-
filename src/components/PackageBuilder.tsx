@@ -354,25 +354,49 @@ export function PackageBuilder({ savedMaterials, savedPackages, setSavedPackages
           const imgs = doc.querySelectorAll('img');
           imgs.forEach(img => {
             const originalStyle = img.getAttribute('style') || '';
-            const originalWidth = img.getAttribute('width') || '';
+            const originalWidthAttr = img.getAttribute('width') || '';
             
-            // Check if there are specific width style or attribute
-            const hasWidth = originalStyle.includes('width') || originalWidth !== '';
-            
-            // Generate robust cross-compatible styles for MS Word and Browsers
-            let newStyles = 'display: inline-block; vertical-align: middle; margin: 4.5pt 6pt; ';
-            if (!hasWidth) {
-              newStyles += 'max-width: 100%; width: 100%; height: auto; ';
-            } else {
-              newStyles += 'max-width: 100%; height: auto; ';
+            // Tìm kiếm chiều rộng từ style
+            let styleWidth = '';
+            const styleWidthMatch = originalStyle.match(/width\s*:\s*([^;]+)/i);
+            if (styleWidthMatch) {
+              styleWidth = styleWidthMatch[1].trim();
             }
             
-            // Merge perfectly to prevent duplicate style attributes
-            if (originalStyle) {
-              img.setAttribute('style', `${newStyles} ${originalStyle}`);
-            } else {
-              img.setAttribute('style', newStyles);
+            // Xác định xem ảnh này là ảnh cỡ nhỏ hay ảnh cần giãn to
+            let isSmallImage = false;
+            let numericWidth = 0;
+            
+            if (originalWidthAttr) {
+              numericWidth = parseInt(originalWidthAttr, 10);
+            } else if (styleWidth && styleWidth.includes('px')) {
+              numericWidth = parseInt(styleWidth, 10);
             }
+            
+            if (numericWidth > 0 && numericWidth < 300) {
+              isSmallImage = true;
+            }
+            
+            // Xây dựng Style tương thích xuất sắc cho Word và trình duyệt
+            let newStyle = 'display: inline-block; vertical-align: middle; margin: 4.5pt 6pt; ';
+            
+            if (isSmallImage) {
+              newStyle += `width: ${numericWidth}px; max-width: 100%; height: auto; `;
+              img.setAttribute('width', String(numericWidth));
+              img.removeAttribute('height'); // Để Word tự động scale tỉ lệ chiều cao
+            } else {
+              newStyle += 'width: 100%; max-width: 100%; height: auto; ';
+              img.setAttribute('width', '100%');
+              img.removeAttribute('height');
+            }
+            
+            // Gộp style mới với style gốc một cách mượt mà (bỏ qua 'width' và 'height' cũ nếu có)
+            let cleanedOriginalStyle = originalStyle
+              .replace(/width\s*:\s*[^;]+;?/gi, '')
+              .replace(/height\s*:\s*[^;]+;?/gi, '')
+              .trim();
+              
+            img.setAttribute('style', `${newStyle} ${cleanedOriginalStyle}`.trim());
           });
           cleanedRichText = doc.body.innerHTML;
         } catch (e) {
