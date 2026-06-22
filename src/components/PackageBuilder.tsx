@@ -239,6 +239,13 @@ export function PackageBuilder({ savedMaterials, savedPackages, setSavedPackages
           th p, td p, th div, td div { margin: 0pt !important; padding: 0pt !important; mso-margin-top-alt: 0pt !important; mso-margin-bottom-alt: 0pt !important; line-height: 1.0 !important; text-align: left; }
           th { font-weight: bold; background-color: transparent; }
           .material-section { margin-bottom: 20pt; page-break-inside: avoid; }
+          .rich-text img {
+             display: inline-block !important;
+             vertical-align: middle;
+             margin: 4.5pt 6pt;
+             max-width: 100% !important;
+             height: auto !important;
+          }
         </style>
       </head>
       <body>
@@ -329,7 +336,9 @@ export function PackageBuilder({ savedMaterials, savedPackages, setSavedPackages
       
       if (mat.richText) {
         contentHtml += `<p style="margin: 0pt; padding: 0pt; mso-margin-top-alt: 0pt; mso-margin-bottom-alt: 0pt;"><strong>II.${index + 1}.1. Yêu cầu chung:</strong></p>`;
-        const cleanedRichText = mat.richText;
+        let cleanedRichText = mat.richText || '';
+        // Đảm bảo ảnh luôn hiển thị inline-block và không vượt quá chiều rộng trang Word
+        cleanedRichText = cleanedRichText.replace(/<img\s+/gi, '<img style="max-width: 100%; height: auto; display: inline-block; vertical-align: middle; margin: 4.5pt 6pt;" ');
         contentHtml += `<div class="rich-text" style="margin: 0pt; mso-margin-top-alt: 0pt; mso-margin-bottom-alt: 0pt;">${cleanedRichText}</div>`;
       }
 
