@@ -75,8 +75,16 @@ export function PackageBuilder({ savedMaterials, savedPackages, setSavedPackages
         return;
       }
 
+      // Fallback for crypto.randomUUID in non-secure contexts
+      const generateUUID = () => {
+        if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+          return crypto.randomUUID();
+        }
+        return 'pkg_' + Math.random().toString(36).substring(2, 15) + '_' + Date.now().toString(36);
+      };
+
       const pkg: BiddingPackage = {
-        id: currentPackageId || crypto.randomUUID(),
+        id: currentPackageId || generateUUID(),
         name: packageName,
         materialIds: selectedIds,
         hiddenTags: packageHiddenTags,
@@ -96,7 +104,10 @@ export function PackageBuilder({ savedMaterials, savedPackages, setSavedPackages
           },
           body: JSON.stringify(pkg)
         });
-        if (!res.ok) throw new Error('Network error');
+        if (!res.ok) {
+          const errMsg = await res.text();
+          throw new Error(errMsg || `HTTP error ${res.status}`);
+        }
 
         setSavedPackages(prev => {
           const existing = prev.findIndex(p => p.id === pkg.id);
@@ -110,9 +121,9 @@ export function PackageBuilder({ savedMaterials, savedPackages, setSavedPackages
 
         setCurrentPackageId(pkg.id);
         alert('Đã lưu tiêu chuẩn gói thầu thành công!');
-      } catch (err) {
+      } catch (err: any) {
         console.error(err);
-        alert('Lỗi lưu gói thầu');
+        alert('Lỗi lưu gói thầu: ' + (err?.message || 'Có lỗi xảy ra khi kết nối máy chủ.'));
       } finally {
         setIsSaving(false);
       }
@@ -337,8 +348,37 @@ export function PackageBuilder({ savedMaterials, savedPackages, setSavedPackages
       if (mat.richText) {
         contentHtml += `<p style="margin: 0pt; padding: 0pt; mso-margin-top-alt: 0pt; mso-margin-bottom-alt: 0pt;"><strong>II.${index + 1}.1. Yêu cầu chung:</strong></p>`;
         let cleanedRichText = mat.richText || '';
-        // Đảm bảo ảnh luôn hiển thị inline-block và không vượt quá chiều rộng trang Word
-        cleanedRichText = cleanedRichText.replace(/<img\s+/gi, '<img style="max-width: 100%; height: auto; display: inline-block; vertical-align: middle; margin: 4.5pt 6pt;" ');
+        try {
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(cleanedRichText, 'text/html');
+          const imgs = doc.querySelectorAll('img');
+          imgs.forEach(img => {
+            const originalStyle = img.getAttribute('style') || '';
+            const originalWidth = img.getAttribute('width') || '';
+            
+            // Check if there are specific width style or attribute
+            const hasWidth = originalStyle.includes('width') || originalWidth !== '';
+            
+            // Generate robust cross-compatible styles for MS Word and Browsers
+            let newStyles = 'display: inline-block; vertical-align: middle; margin: 4.5pt 6pt; ';
+            if (!hasWidth) {
+              newStyles += 'max-width: 100%; width: 100%; height: auto; ';
+            } else {
+              newStyles += 'max-width: 100%; height: auto; ';
+            }
+            
+            // Merge perfectly to prevent duplicate style attributes
+            if (originalStyle) {
+              img.setAttribute('style', `${newStyles} ${originalStyle}`);
+            } else {
+              img.setAttribute('style', newStyles);
+            }
+          });
+          cleanedRichText = doc.body.innerHTML;
+        } catch (e) {
+          console.error("DOMParser clean failed, falling back to regex:", e);
+          cleanedRichText = cleanedRichText.replace(/<img\s+/gi, '<img style="max-width: 100%; height: auto; display: inline-block; vertical-align: middle; margin: 4.5pt 6pt;" ');
+        }
         contentHtml += `<div class="rich-text" style="margin: 0pt; mso-margin-top-alt: 0pt; mso-margin-bottom-alt: 0pt;">${cleanedRichText}</div>`;
       }
 
