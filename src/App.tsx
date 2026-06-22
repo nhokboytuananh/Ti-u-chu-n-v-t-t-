@@ -587,32 +587,32 @@ export default function App() {
               <div 
                 key={mat.id}
                 onClick={() => loadMaterialForView(mat)}
-                className={`p-3 rounded-lg border cursor-pointer transition-all ${
+                className={`p-2 rounded-md border cursor-pointer transition-all ${
                   currentId === mat.id && activeTab === 'materials'
                     ? 'border-blue-500 bg-blue-50 shadow-sm ring-1 ring-blue-500/20' 
                     : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50'
                 }`}
               >
-                <div className="flex justify-between items-start gap-2">
-                  <div className="overflow-hidden flex-1">
-                    <h3 className="font-semibold text-gray-800 text-sm truncate" title={mat.name}>{mat.name}</h3>
-                    <p className="text-xs text-gray-500 mt-1 truncate" title={mat.code}>{mat.code || 'Chưa có mã'}</p>
+                <div className="flex justify-between items-center gap-2">
+                  <div className="overflow-hidden flex-1 leading-tight">
+                    <h3 className="font-medium text-gray-800 text-sm truncate" title={mat.name}>{mat.name}</h3>
+                    <p className="text-xs text-gray-500 truncate mt-0.5" title={mat.code}>{mat.code || 'Chưa có mã'}</p>
                   </div>
                   {isAuthenticated && (
-                    <div className="flex flex-col gap-1 shrink-0">
+                    <div className="flex flex-col gap-0.5 shrink-0">
                       <button 
                         onClick={(e) => loadMaterialForEdit(mat, e)}
-                        className="flex items-center justify-center gap-1 px-2 py-1 flex-1 text-xs font-medium text-emerald-600 hover:bg-emerald-100 bg-emerald-50 rounded transition-colors"
+                        className="p-1 flex items-center justify-center text-emerald-600 hover:bg-emerald-100 rounded transition-colors"
                         title="Chỉnh sửa"
                       >
-                        <Edit2 size={12} />
+                        <Edit2 size={13} />
                       </button>
                       <button 
                         onClick={(e) => deleteMaterial(mat.id, e)}
-                        className="p-1 flex-1 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors self-end"
+                        className="p-1 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
                         title="Xóa"
                       >
-                        <Trash2 size={14} />
+                        <Trash2 size={13} />
                       </button>
                     </div>
                   )}
