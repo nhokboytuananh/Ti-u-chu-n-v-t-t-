@@ -36,6 +36,54 @@ export function RichTextEditor({ value, onChange, readOnly }: RichTextEditorProp
     handleInput();
   };
 
+  const applyFontName = (fontName: string) => {
+    const tempFontName = `__TEMP_FONT_${Math.random()}__`;
+    document.execCommand('fontName', false, tempFontName);
+    if (editorRef.current) {
+      const fonts = editorRef.current.querySelectorAll(`font[face="${tempFontName}"]`);
+      fonts.forEach(font => {
+        const span = document.createElement('span');
+        span.style.fontFamily = fontName;
+        span.innerHTML = font.innerHTML;
+        font.replaceWith(span);
+      });
+    }
+    editorRef.current?.focus();
+    handleInput();
+  };
+
+  const applyColor = (color: string) => {
+    const tempFontName = `__TEMP_FONT_${Math.random()}__`;
+    document.execCommand('fontName', false, tempFontName);
+    if (editorRef.current) {
+      const fonts = editorRef.current.querySelectorAll(`font[face="${tempFontName}"]`);
+      fonts.forEach(font => {
+        const span = document.createElement('span');
+        span.style.color = color;
+        span.innerHTML = font.innerHTML;
+        font.replaceWith(span);
+      });
+    }
+    editorRef.current?.focus();
+    handleInput();
+  };
+
+  const applyFontSize = (size: string) => {
+    const tempFontName = `__TEMP_FONT_${Math.random()}__`;
+    document.execCommand('fontName', false, tempFontName);
+    if (editorRef.current) {
+      const fonts = editorRef.current.querySelectorAll(`font[face="${tempFontName}"]`);
+      fonts.forEach(font => {
+        const span = document.createElement('span');
+        span.style.fontSize = size;
+        span.innerHTML = font.innerHTML;
+        font.replaceWith(span);
+      });
+    }
+    editorRef.current?.focus();
+    handleInput();
+  };
+
   const applyLineHeight = (height: string) => {
     const selection = window.getSelection();
     if (!selection || !selection.rangeCount) return;
@@ -186,13 +234,13 @@ export function RichTextEditor({ value, onChange, readOnly }: RichTextEditorProp
           
           <input 
             type="color" 
-            onChange={(e) => formatText('foreColor', e.target.value)} 
+            onChange={(e) => applyColor(e.target.value)} 
             className="w-8 h-8 p-0 border-0 rounded cursor-pointer"
             title="Màu chữ" 
           />
           
           <select 
-            onChange={(e) => formatText('fontName', e.target.value)}
+            onChange={(e) => applyFontName(e.target.value)}
             className="p-1.5 text-sm border border-gray-300 rounded bg-white"
             title="Font chữ"
           >
@@ -200,6 +248,23 @@ export function RichTextEditor({ value, onChange, readOnly }: RichTextEditorProp
             {fonts.map(font => <option key={font} value={font}>{font}</option>)}
           </select>
           
+          <select 
+            onChange={(e) => applyFontSize(e.target.value)}
+            className="p-1.5 text-sm border border-gray-300 rounded bg-white"
+            title="Cỡ chữ"
+          >
+            <option value="">Cỡ chữ...</option>
+            <option value="10pt">10pt</option>
+            <option value="11pt">11pt</option>
+            <option value="12pt">12pt</option>
+            <option value="13pt">13pt</option>
+            <option value="14pt">14pt</option>
+            <option value="16pt">16pt</option>
+            <option value="18pt">18pt</option>
+            <option value="20pt">20pt</option>
+            <option value="24pt">24pt</option>
+          </select>
+
           <select 
             onChange={(e) => applyLineHeight(e.target.value)}
             className="p-1.5 text-sm border border-gray-300 rounded bg-white"
@@ -245,6 +310,53 @@ export function RichTextEditor({ value, onChange, readOnly }: RichTextEditorProp
           contentEditable={!readOnly}
           onInput={handleInput}
           onBlur={handleInput}
+          onPaste={(e) => {
+            // Delay 1 tick to let the browser paste HTML/Images first
+            setTimeout(() => {
+              if (editorRef.current) {
+                let changed = false;
+                editorRef.current.querySelectorAll('img').forEach(img => {
+                  // If it's a local file path, it will appear as broken
+                  if (img.src.startsWith('file://') || img.src.startsWith('webkit-fake-url://') || img.src === '' || img.src.indexOf('http') !== 0 && img.src.indexOf('data:') !== 0 && img.src.indexOf('blob:') !== 0) {
+                    
+                    const wAttr = img.getAttribute('width') || '';
+                    const hAttr = img.getAttribute('height') || '';
+                    const wStyle = img.style.width || '';
+                    const hStyle = img.style.height || '';
+                    
+                    const width = parseInt(wAttr || wStyle || '0', 10);
+                    const height = parseInt(hAttr || hStyle || '0', 10);
+                    
+                    // Look for typical horizontal line dimensions from Word (wide and very thin)
+                    // e.g. height: 1.5pt, 2px, etc.
+                    if ((width > 50 || wStyle.includes('%')) && (height <= 20 || hStyle.includes('pt') || hStyle.includes('px'))) {
+                      const hr = document.createElement('hr');
+                      hr.style.border = '0';
+                      hr.style.borderTop = '1pt solid black';
+                      hr.style.width = '40%';
+                      hr.style.margin = '5px auto';
+                      img.replaceWith(hr);
+                    } else if (height <= 30 && width >= 50) {
+                      const hr = document.createElement('hr');
+                      hr.style.border = '0';
+                      hr.style.borderTop = '1pt solid black';
+                      hr.style.width = '40%';
+                      hr.style.margin = '5px auto';
+                      img.replaceWith(hr);
+                    } else {
+                      // Remove other broken local images from Word
+                      img.remove();
+                    }
+                    changed = true;
+                  }
+                });
+                
+                if (changed) {
+                  handleInput();
+                }
+              }
+            }, 50);
+          }}
           className="bg-white outline-none word-editor-content shrink-0 w-full"
           style={{
             minHeight: '100%',

@@ -33,7 +33,7 @@ export default function App() {
           if (tables.length === 0 && d.excelData?.data) {
             tables = [{
               id: 'legacy-table',
-              title: 'Bảng thông số kỹ thuật',
+              title: 'Bảng thông số kỹ thuật chi tiết:',
               data: d.excelData.data || [],
               merges: d.excelData.merges || [],
               tags: d.excelData.tags || {}
@@ -121,7 +121,7 @@ export default function App() {
   const [richText, setRichText] = useState('');
   const [tables, setTables] = useState<import('./types').ExcelTableConfig[]>([{
      id: crypto.randomUUID(),
-     title: 'Bảng thông số kỹ thuật',
+     title: 'Bảng thông số kỹ thuật chi tiết:',
     data: [
       ['STT', 'Hạng mục', 'Đơn vị', 'Yêu cầu', 'Thông số chào'],
       ['1', 'Nhà sản xuất', '', 'Nêu cụ thể', ''],
@@ -170,7 +170,7 @@ export default function App() {
       setRichText('');
       setTables([{
          id: crypto.randomUUID(),
-         title: 'Bảng thông số kỹ thuật',
+         title: 'Bảng thông số kỹ thuật chi tiết:',
          data: [
            ['STT', 'Hạng mục', 'Đơn vị', 'Yêu cầu', 'Thông số chào'],
            ['1', 'Nhà sản xuất', '', 'Nêu cụ thể', ''],
@@ -271,7 +271,7 @@ export default function App() {
         if (fetchedTables.length === 0 && resData.excelData?.data) {
            fetchedTables = [{
               id: 'legacy-table',
-              title: 'Bảng thông số kỹ thuật',
+              title: 'Bảng thông số kỹ thuật chi tiết:',
               data: resData.excelData.data || [],
               merges: resData.excelData.merges || [],
               tags: resData.excelData.tags || {}
@@ -318,7 +318,7 @@ export default function App() {
       setRichText('');
       setTables([{
          id: crypto.randomUUID(),
-         title: 'Bảng thông số kỹ thuật',
+         title: 'Bảng thông số kỹ thuật chi tiết:',
          data: [
            ['STT', 'Hạng mục', 'Đơn vị', 'Yêu cầu', 'Thông số chào'],
            ['1', 'Nhà sản xuất', '', 'Nêu cụ thể', ''],
@@ -348,7 +348,7 @@ export default function App() {
     setRichText(material.richText);
     setTables(material.tables && material.tables.length > 0 ? material.tables : [{
          id: crypto.randomUUID(),
-         title: 'Bảng thông số kỹ thuật',
+         title: 'Bảng thông số kỹ thuật chi tiết:',
          data: [
            ['STT', 'Hạng mục', 'Đơn vị', 'Yêu cầu', 'Thông số chào'],
            ['1', 'Nhà sản xuất', '', 'Nêu cụ thể', ''],
@@ -792,7 +792,7 @@ export default function App() {
                   if (tables) {
                     tables.forEach(table => {
                       if (table.tags) {
-                         Object.values(table.tags).forEach(tagStr => {
+                         Object.values(table.tags).forEach((tagStr: any) => {
                            const tags = tagStr.split(',').map(t => t.trim()).filter(Boolean);
                            tags.forEach(t => tagsSet.add(t));
                          });
@@ -878,7 +878,7 @@ export default function App() {
                   <div className="px-6 py-4 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
                     <div className="flex items-center gap-2">
                        <Database className="text-blue-500" size={20} />
-                       <h2 className="text-lg font-semibold text-gray-800">Bảng thông số kỹ thuật</h2>
+                       <h2 className="text-lg font-semibold text-gray-800">Bảng thông số kỹ thuật chi tiết:</h2>
                     </div>
                     {isEditing && (
                        <button

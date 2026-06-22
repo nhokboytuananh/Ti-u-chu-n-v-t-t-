@@ -254,26 +254,37 @@ export function PackageBuilder({ savedMaterials, savedPackages, setSavedPackages
         contentHtml += `<h2 style="font-size: 14pt;">Danh mục các tài liệu chứng minh nguồn gốc và chất lượng hàng hóa</h2>`;
         contentHtml += `<table border="1" cellpadding="0" cellspacing="0" style="margin-bottom: 20pt; text-align: center; border-collapse: collapse; width: 100%; mso-table-lspace: 0pt; mso-table-rspace: 0pt;">`;
         contentHtml += `
-          <tr>
-            <th style="width: 5%; text-align: center; padding: 0pt;"><p style="margin: 0pt; line-height: 1.0; text-align: center;">TT</p></th>
-            <th style="width: 35%; text-align: center; padding: 0pt;"><p style="margin: 0pt; line-height: 1.0; text-align: center;">Tên vật tư - thiết bị</p></th>
-            <th style="width: 15%; text-align: center; padding: 0pt;"><p style="margin: 0pt; line-height: 1.0; text-align: center;">Biên bản thí nghiệm điển hình</p></th>
-            <th style="width: 15%; text-align: center; padding: 0pt;"><p style="margin: 0pt; line-height: 1.0; text-align: center;">Tài liệu kỹ thuật (bản vẽ, Catalogue, ...)</p></th>
-            <th style="width: 15%; text-align: center; padding: 0pt;"><p style="margin: 0pt; line-height: 1.0; text-align: center;">Xác nhận của đơn vị sử dụng cuối cùng</p></th>
-            <th style="width: 15%; text-align: center; padding: 0pt;"><p style="margin: 0pt; line-height: 1.0; text-align: center;">Chứng chỉ quản lý chất lượng ISO 9001 của nhà sản xuất</p></th>
-          </tr>
+          <thead>
+            <tr>
+              <th style="width: 5%; text-align: center; padding: 0pt;"><p style="margin: 0pt; line-height: 1.0; text-align: center;">TT</p></th>
+              <th style="width: 35%; text-align: center; padding: 0pt;"><p style="margin: 0pt; line-height: 1.0; text-align: center;">Tên vật tư - thiết bị</p></th>
+              <th style="width: 15%; text-align: center; padding: 0pt;"><p style="margin: 0pt; line-height: 1.0; text-align: center;">Biên bản thí nghiệm điển hình</p></th>
+              <th style="width: 15%; text-align: center; padding: 0pt;"><p style="margin: 0pt; line-height: 1.0; text-align: center;">Tài liệu kỹ thuật (bản vẽ, Catalogue, ...)</p></th>
+              <th style="width: 15%; text-align: center; padding: 0pt;"><p style="margin: 0pt; line-height: 1.0; text-align: center;">Xác nhận của đơn vị sử dụng cuối cùng</p></th>
+              <th style="width: 15%; text-align: center; padding: 0pt;"><p style="margin: 0pt; line-height: 1.0; text-align: center;">Chứng chỉ quản lý chất lượng ISO 9001 của nhà sản xuất</p></th>
+            </tr>
+          </thead>
+          <tbody>
         `;
         selectedMaterials.forEach((mat, index) => {
             const reqs = mat.docRequirements || {};
             
             // Lấy danh sách các biến (tags) cho vật tư này
             const tagsSet = new Set<string>();
+            const tagNames: Record<string, string> = {};
             if (mat.tables) {
                 mat.tables.forEach(table => {
-                    if (table.tags) {
-                        Object.values(table.tags).forEach(tagStr => {
+                    if (table.tags && table.data) {
+                        Object.entries(table.tags).forEach(([rowStr, tagStr]) => {
+                            const rowIndex = parseInt(rowStr, 10);
                             const tags = tagStr.split(',').map((t: string) => t.trim()).filter(Boolean);
-                            tags.forEach((t: string) => tagsSet.add(t));
+                            const variantName = (table.data[rowIndex] && table.data[rowIndex].length > 1) ? table.data[rowIndex][1] : '';
+                            tags.forEach((t: string) => {
+                                tagsSet.add(t);
+                                if (!tagNames[t] && variantName) {
+                                    tagNames[t] = variantName.toString().trim();
+                                }
+                            });
                         });
                     }
                 });
@@ -295,10 +306,11 @@ export function PackageBuilder({ savedMaterials, savedPackages, setSavedPackages
 
             if (hasVariants) {
                 activeVariants.forEach(variant => {
+                    const displayVariantName = tagNames[variant] || variant;
                     contentHtml += `
                       <tr>
                         <td style="text-align: center; padding: 0pt;"><p style="margin: 0pt; line-height: 1.0; text-align: center;"></p></td>
-                        <td style="text-align: left; padding: 0pt;"><p style="margin: 0pt; line-height: 1.0; text-align: left;">${variant}</p></td>
+                        <td style="text-align: left; padding: 0pt;"><p style="margin: 0pt; line-height: 1.0; text-align: left;">${displayVariantName}</p></td>
                         <td style="text-align: center; font-family: Arial; padding: 0pt;"><p style="margin: 0pt; line-height: 1.0; text-align: center;">${reqs.typeTest ? 'x' : ''}</p></td>
                         <td style="text-align: center; font-family: Arial; padding: 0pt;"><p style="margin: 0pt; line-height: 1.0; text-align: center;">${reqs.catalog ? 'x' : ''}</p></td>
                         <td style="text-align: center; font-family: Arial; padding: 0pt;"><p style="margin: 0pt; line-height: 1.0; text-align: center;">${reqs.endUser ? 'x' : ''}</p></td>
@@ -308,7 +320,7 @@ export function PackageBuilder({ savedMaterials, savedPackages, setSavedPackages
                 });
             }
         });
-        contentHtml += `</table>`;
+        contentHtml += `</tbody></table>`;
     }
 
     selectedMaterials.forEach((mat, index) => {
@@ -333,9 +345,16 @@ export function PackageBuilder({ savedMaterials, savedPackages, setSavedPackages
             // II.{mat index}.2, 3, etc.
             const sectionIdx = mat.richText ? tableOffset + 2 : tableOffset + 1;
             tableOffset++;
-            contentHtml += `<p style="margin: 0pt; padding: 0pt; mso-margin-top-alt: 0pt; mso-margin-bottom-alt: 0pt;"><strong>II.${index + 1}.${sectionIdx}. ${table.title || 'Bảng thông số'}:</strong></p>`;
+            const displayTitle = (table.title || 'Bảng thông số').trim();
+            const titleWithColon = displayTitle.endsWith(':') ? displayTitle : `${displayTitle}:`;
+            contentHtml += `<p style="margin: 0pt; padding: 0pt; mso-margin-top-alt: 0pt; mso-margin-bottom-alt: 0pt;"><strong>II.${index + 1}.${sectionIdx}. ${titleWithColon}</strong></p>`;
             contentHtml += `<table border="1" cellpadding="0" cellspacing="0" style="margin: 0pt; mso-table-lspace: 0pt; mso-table-rspace: 0pt;">`;
             filteredData.forEach((row, rIdx) => {
+              if (rIdx === 0) {
+                contentHtml += `<thead>`;
+              } else if (rIdx === 1) {
+                contentHtml += `<tbody>`;
+              }
               contentHtml += `<tr>`;
               row.forEach((cell, cIdx) => {
                 let rowSpan = 1;
@@ -372,7 +391,13 @@ export function PackageBuilder({ savedMaterials, savedPackages, setSavedPackages
                 }
               });
               contentHtml += `</tr>`;
+              if (rIdx === 0) {
+                contentHtml += `</thead>`;
+              }
             });
+            if (filteredData.length > 1) {
+              contentHtml += `</tbody>`;
+            }
             contentHtml += `</table>`;
           }
         });
@@ -441,8 +466,8 @@ export function PackageBuilder({ savedMaterials, savedPackages, setSavedPackages
                           });
                           
                           worksheet.addImage(imageId, {
-                            tl: { col: colIdx + 0.05, row: currentRow + rowIdx - 1 + 0.05 },
-                            br: { col: colIdx + 1 - 0.05, row: currentRow + rowIdx - 0.05 },
+                            tl: { col: colIdx + 0.05, row: currentRow + rowIdx - 1 + 0.05 } as any,
+                            br: { col: colIdx + 1 - 0.05, row: currentRow + rowIdx - 0.05 } as any,
                             editAs: 'oneCell'
                           });
 
