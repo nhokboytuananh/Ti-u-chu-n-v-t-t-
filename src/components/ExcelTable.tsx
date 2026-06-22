@@ -232,6 +232,48 @@ export function ExcelTable({ tableData, setTableData, merges, setMerges, rowTags
     event.target.value = '';
   };
 
+  const parseExcelPaste = (text: string): string[][] => {
+    const rows: string[][] = [];
+    let currentRow: string[] = [];
+    let currentCell = '';
+    let inQuotes = false;
+    
+    for (let i = 0; i < text.length; i++) {
+      const char = text[i];
+      
+      if (char === '"') {
+        if (inQuotes && text[i + 1] === '"') {
+          currentCell += '"';
+          i++; // skip next quote
+        } else {
+          inQuotes = !inQuotes;
+        }
+      } else if (char === '\t' && !inQuotes) {
+        currentRow.push(currentCell);
+        currentCell = '';
+      } else if ((char === '\n' || char === '\r') && !inQuotes) {
+        if (char === '\r' && text[i + 1] === '\n') {
+           i++; // skip \n
+        }
+        currentRow.push(currentCell);
+        rows.push(currentRow);
+        currentRow = [];
+        currentCell = '';
+      } else {
+        currentCell += char;
+      }
+    }
+    
+    if (currentCell !== '' || currentRow.length > 0) {
+      currentRow.push(currentCell);
+      if (currentRow.length > 0 || currentCell !== '') {
+         rows.push(currentRow);
+      }
+    }
+    
+    return rows;
+  };
+
   const handlePaste = (rowIndex: number, colIndex: number, event: React.ClipboardEvent<HTMLTextAreaElement | HTMLDivElement>) => {
     if (readOnly) return;
     
@@ -265,10 +307,7 @@ export function ExcelTable({ tableData, setTableData, merges, setMerges, rowTags
         // Or if it's a single cell from Excel (which usually ends with \n)
         event.preventDefault(); 
         
-        // Handle quoted newlines inside cells if needed, but for a simple fix, 
-        // we'll just split by newline.
-        const rowStrings = textData.split(/\r?\n/);
-        const rows = rowStrings.map(row => row.split('\t'));
+        const rows = parseExcelPaste(textData);
         
         let cleanRows = rows;
         // Remove trailing empty row which Excel often adds
@@ -278,12 +317,6 @@ export function ExcelTable({ tableData, setTableData, merges, setMerges, rowTags
         
         if (cleanRows.length === 0) return;
 
-        // If it's literally just a single value without newlines (other than the trailing one we removed),
-        // we could let default paste happen, but applying it as a 1x1 grid is fine too, 
-        // it replaces the cell content which matches Excel.
-        // Wait, if the user highlights text inside the textarea and pastes multiline text,
-        // it would replace the current and adjacent cells. This is a common tradeoff in simple grid implementations.
-        
         const newData = [...tableData].map(r => [...r]);
         const startRow = rowIndex;
         const startCol = colIndex;
@@ -479,7 +512,7 @@ export function ExcelTable({ tableData, setTableData, merges, setMerges, rowTags
   };
 
   const processPastedText = (textData: string) => {
-    const rows = textData.split(/\r?\n/).map(row => row.split('\t'));
+    const rows = parseExcelPaste(textData);
     let cleanRows = rows;
     if (cleanRows.length > 0 && cleanRows[cleanRows.length - 1].length === 1 && cleanRows[cleanRows.length - 1][0] === '') {
       cleanRows = cleanRows.slice(0, -1);
