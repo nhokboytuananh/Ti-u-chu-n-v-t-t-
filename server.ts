@@ -50,9 +50,15 @@ async function initDb() {
         name TEXT NOT NULL,
         material_ids JSONB NOT NULL,
         hidden_tags JSONB,
+        hidden_tables JSONB,
         created_at TIMESTAMP NOT NULL DEFAULT NOW()
       );
     `);
+    try {
+      await db.execute(`ALTER TABLE packages ADD COLUMN IF NOT EXISTS hidden_tables JSONB;`);
+    } catch (e: any) {
+      console.warn("Could not alter packages table to add hidden_tables:", e.message);
+    }
     console.log("Database initialized successfully");
   } catch (err: any) {
     console.warn("Database initialization skipped (or failed):", err.message);
@@ -242,9 +248,33 @@ async function startServer() {
         }
       }).returning();
       res.json(data[0]);
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: "Failed to save package" });
+    } catch (error: any) {
+      console.error("Failed to save package:", error);
+      // Fallback in case "hidden_tables" column does not exist in their custom database yet
+      if (error?.message && (error.message.includes("hidden_tables") || error.message.includes("column"))) {
+        try {
+          console.log("Attempting fallback saving without hiddenTables column...");
+          const { id, name, materialIds, hiddenTags } = req.body;
+          const data = await db.insert(packages).values({
+            id,
+            name,
+            materialIds: materialIds || [],
+            hiddenTags: hiddenTags || {}
+          } as any).onConflictDoUpdate({
+            target: packages.id,
+            set: {
+              name,
+              materialIds: materialIds || [],
+              hiddenTags: hiddenTags || {}
+            } as any
+          }).returning();
+          return res.json(data[0]);
+        } catch (fbErr: any) {
+          console.error("Fallback save failed too:", fbErr);
+          return res.status(500).json({ error: fbErr.message || "Failed to save package (fallback)" });
+        }
+      }
+      res.status(500).json({ error: error?.message || "Failed to save package" });
     }
   });
 
