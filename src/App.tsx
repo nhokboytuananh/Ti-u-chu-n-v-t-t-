@@ -803,9 +803,6 @@ export default function App() {
                   const hasVariants = activeVariants.length > 0;
 
                   let hasAnyDocs = docRequirements.typeTest || docRequirements.catalog || docRequirements.endUser || docRequirements.iso;
-                  if (docRequirements.variants) {
-                    hasAnyDocs = hasAnyDocs || Object.values(docRequirements.variants).some(v => v.typeTest || v.catalog || v.endUser || v.iso);
-                  }
 
                   if (!isEditing && !hasAnyDocs) return null;
 
@@ -816,120 +813,48 @@ export default function App() {
                         <h2 className="text-lg font-semibold text-gray-800">Danh mục các tài liệu chứng minh nguồn gốc và chất lượng hàng hóa</h2>
                       </div>
                       <div className="p-6">
-                        {!hasVariants ? (
-                          <div className="space-y-3">
-                            <label className={`flex items-center gap-3 ${!isEditing ? 'cursor-default' : 'cursor-pointer'}`}>
-                              <input 
-                                type="checkbox" 
-                                disabled={!isEditing}
-                                checked={docRequirements.typeTest || false} 
-                                onChange={(e) => setDocRequirements({...docRequirements, typeTest: e.target.checked})}
-                                className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 disabled:opacity-60" 
-                              />
-                              <span className={`text-sm ${!isEditing && !docRequirements.typeTest ? 'text-gray-400 line-through' : 'text-gray-700'}`}>Biên bản thí nghiệm điển hình</span>
-                            </label>
-                            <label className={`flex items-center gap-3 ${!isEditing ? 'cursor-default' : 'cursor-pointer'}`}>
-                              <input 
-                                type="checkbox" 
-                                disabled={!isEditing}
-                                checked={docRequirements.catalog || false} 
-                                onChange={(e) => setDocRequirements({...docRequirements, catalog: e.target.checked})}
-                                className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 disabled:opacity-60" 
-                              />
-                              <span className={`text-sm ${!isEditing && !docRequirements.catalog ? 'text-gray-400 line-through' : 'text-gray-700'}`}>Tài liệu kỹ thuật (bản vẽ, Catalogue, ...)</span>
-                            </label>
-                            <label className={`flex items-center gap-3 ${!isEditing ? 'cursor-default' : 'cursor-pointer'}`}>
-                              <input 
-                                type="checkbox" 
-                                disabled={!isEditing}
-                                checked={docRequirements.endUser || false} 
-                                onChange={(e) => setDocRequirements({...docRequirements, endUser: e.target.checked})}
-                                className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 disabled:opacity-60" 
-                              />
-                              <span className={`text-sm ${!isEditing && !docRequirements.endUser ? 'text-gray-400 line-through' : 'text-gray-700'}`}>Xác nhận của đơn vị sử dụng cuối cùng</span>
-                            </label>
-                            <label className={`flex items-center gap-3 ${!isEditing ? 'cursor-default' : 'cursor-pointer'}`}>
-                              <input 
-                                type="checkbox" 
-                                disabled={!isEditing}
-                                checked={docRequirements.iso || false} 
-                                onChange={(e) => setDocRequirements({...docRequirements, iso: e.target.checked})}
-                                className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 disabled:opacity-60" 
-                              />
-                              <span className={`text-sm ${!isEditing && !docRequirements.iso ? 'text-gray-400 line-through' : 'text-gray-700'}`}>Chứng chỉ quản lý chất lượng ISO 9001 của nhà sản xuất</span>
-                            </label>
-                          </div>
-                        ) : (
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {activeVariants.map(variant => {
-                              const varReqs = docRequirements.variants?.[variant] || { typeTest: false, catalog: false, endUser: false, iso: false };
-                              
-                              const handleVariantChange = (key: string, checked: boolean) => {
-                                setDocRequirements(prev => ({
-                                  ...prev,
-                                  variants: {
-                                    ...(prev.variants || {}),
-                                    [variant]: {
-                                      ...((prev.variants && prev.variants[variant]) || {}),
-                                      [key]: checked
-                                    }
-                                  }
-                                }));
-                              };
-
-                              return (
-                                <div key={variant} className="border border-gray-200 rounded-lg p-4 bg-gray-50/50">
-                                  <h3 className="font-semibold text-gray-800 mb-3 pb-2 border-b border-gray-200 flex items-center gap-2">
-                                    <span className="w-2 h-2 rounded-full bg-blue-500"></span>
-                                    Thể loại: {variant}
-                                  </h3>
-                                  <div className="space-y-2.5">
-                                    <label className={`flex items-center justify-between gap-3 ${!isEditing ? 'cursor-default' : 'cursor-pointer'}`}>
-                                      <span className={`text-xs ${!isEditing && !varReqs.typeTest ? 'text-gray-400' : 'text-gray-700'}`}>Thí nghiệm điển hình</span>
-                                      <input 
-                                        type="checkbox" 
-                                        disabled={!isEditing}
-                                        checked={varReqs.typeTest || false} 
-                                        onChange={(e) => handleVariantChange('typeTest', e.target.checked)}
-                                        className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 disabled:opacity-60" 
-                                      />
-                                    </label>
-                                    <label className={`flex items-center justify-between gap-3 ${!isEditing ? 'cursor-default' : 'cursor-pointer'}`}>
-                                      <span className={`text-xs ${!isEditing && !varReqs.catalog ? 'text-gray-400' : 'text-gray-700'}`}>Tài liệu kỹ thuật / Catalogue</span>
-                                      <input 
-                                        type="checkbox" 
-                                        disabled={!isEditing}
-                                        checked={varReqs.catalog || false} 
-                                        onChange={(e) => handleVariantChange('catalog', e.target.checked)}
-                                        className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 disabled:opacity-60" 
-                                      />
-                                    </label>
-                                    <label className={`flex items-center justify-between gap-3 ${!isEditing ? 'cursor-default' : 'cursor-pointer'}`}>
-                                      <span className={`text-xs ${!isEditing && !varReqs.endUser ? 'text-gray-400' : 'text-gray-700'}`}>Xác nhận của đơn vị SD cuối</span>
-                                      <input 
-                                        type="checkbox" 
-                                        disabled={!isEditing}
-                                        checked={varReqs.endUser || false} 
-                                        onChange={(e) => handleVariantChange('endUser', e.target.checked)}
-                                        className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 disabled:opacity-60" 
-                                      />
-                                    </label>
-                                    <label className={`flex items-center justify-between gap-3 ${!isEditing ? 'cursor-default' : 'cursor-pointer'}`}>
-                                      <span className={`text-xs ${!isEditing && !varReqs.iso ? 'text-gray-400' : 'text-gray-700'}`}>Chứng chỉ ISO 9001</span>
-                                      <input 
-                                        type="checkbox" 
-                                        disabled={!isEditing}
-                                        checked={varReqs.iso || false} 
-                                        onChange={(e) => handleVariantChange('iso', e.target.checked)}
-                                        className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 disabled:opacity-60" 
-                                      />
-                                    </label>
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        )}
+                        <div className="space-y-3">
+                          <label className={`flex items-center gap-3 ${!isEditing ? 'cursor-default' : 'cursor-pointer'}`}>
+                            <input 
+                              type="checkbox" 
+                              disabled={!isEditing}
+                              checked={docRequirements.typeTest || false} 
+                              onChange={(e) => setDocRequirements({...docRequirements, typeTest: e.target.checked})}
+                              className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 disabled:opacity-60" 
+                            />
+                            <span className={`text-sm ${!isEditing && !docRequirements.typeTest ? 'text-gray-400 line-through' : 'text-gray-700'}`}>Biên bản thí nghiệm điển hình</span>
+                          </label>
+                          <label className={`flex items-center gap-3 ${!isEditing ? 'cursor-default' : 'cursor-pointer'}`}>
+                            <input 
+                              type="checkbox" 
+                              disabled={!isEditing}
+                              checked={docRequirements.catalog || false} 
+                              onChange={(e) => setDocRequirements({...docRequirements, catalog: e.target.checked})}
+                              className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 disabled:opacity-60" 
+                            />
+                            <span className={`text-sm ${!isEditing && !docRequirements.catalog ? 'text-gray-400 line-through' : 'text-gray-700'}`}>Tài liệu kỹ thuật (bản vẽ, Catalogue, ...)</span>
+                          </label>
+                          <label className={`flex items-center gap-3 ${!isEditing ? 'cursor-default' : 'cursor-pointer'}`}>
+                            <input 
+                              type="checkbox" 
+                              disabled={!isEditing}
+                              checked={docRequirements.endUser || false} 
+                              onChange={(e) => setDocRequirements({...docRequirements, endUser: e.target.checked})}
+                              className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 disabled:opacity-60" 
+                            />
+                            <span className={`text-sm ${!isEditing && !docRequirements.endUser ? 'text-gray-400 line-through' : 'text-gray-700'}`}>Xác nhận của đơn vị sử dụng cuối cùng</span>
+                          </label>
+                          <label className={`flex items-center gap-3 ${!isEditing ? 'cursor-default' : 'cursor-pointer'}`}>
+                            <input 
+                              type="checkbox" 
+                              disabled={!isEditing}
+                              checked={docRequirements.iso || false} 
+                              onChange={(e) => setDocRequirements({...docRequirements, iso: e.target.checked})}
+                              className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 disabled:opacity-60" 
+                            />
+                            <span className={`text-sm ${!isEditing && !docRequirements.iso ? 'text-gray-400 line-through' : 'text-gray-700'}`}>Chứng chỉ quản lý chất lượng ISO 9001 của nhà sản xuất</span>
+                          </label>
+                        </div>
                       </div>
                     </section>
                   );

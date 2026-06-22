@@ -247,11 +247,7 @@ export function PackageBuilder({ savedMaterials, savedPackages, setSavedPackages
     // Add Summary Document Requirements Table
     const hasAnyDocs = selectedMaterials.some(m => {
         const reqs = m.docRequirements || {};
-        if (reqs.typeTest || reqs.catalog || reqs.endUser || reqs.iso) return true;
-        if (reqs.variants) {
-           return Object.values(reqs.variants).some(v => v.typeTest || v.catalog || v.endUser || v.iso);
-        }
-        return false;
+        return reqs.typeTest || reqs.catalog || reqs.endUser || reqs.iso;
     });
 
     if (hasAnyDocs) {
@@ -299,15 +295,14 @@ export function PackageBuilder({ savedMaterials, savedPackages, setSavedPackages
 
             if (hasVariants) {
                 activeVariants.forEach(variant => {
-                    const varReqs = reqs.variants && reqs.variants[variant] ? reqs.variants[variant] : {};
                     contentHtml += `
                       <tr>
                         <td style="text-align: center; padding: 0pt;"><p style="margin: 0pt; line-height: 1.0; text-align: center;"></p></td>
                         <td style="text-align: left; padding: 0pt;"><p style="margin: 0pt; line-height: 1.0; text-align: left;">${variant}</p></td>
-                        <td style="text-align: center; font-family: Arial; padding: 0pt;"><p style="margin: 0pt; line-height: 1.0; text-align: center;">${varReqs.typeTest ? 'x' : ''}</p></td>
-                        <td style="text-align: center; font-family: Arial; padding: 0pt;"><p style="margin: 0pt; line-height: 1.0; text-align: center;">${varReqs.catalog ? 'x' : ''}</p></td>
-                        <td style="text-align: center; font-family: Arial; padding: 0pt;"><p style="margin: 0pt; line-height: 1.0; text-align: center;">${varReqs.endUser ? 'x' : ''}</p></td>
-                        <td style="text-align: center; font-family: Arial; padding: 0pt;"><p style="margin: 0pt; line-height: 1.0; text-align: center;">${varReqs.iso ? 'x' : ''}</p></td>
+                        <td style="text-align: center; font-family: Arial; padding: 0pt;"><p style="margin: 0pt; line-height: 1.0; text-align: center;">${reqs.typeTest ? 'x' : ''}</p></td>
+                        <td style="text-align: center; font-family: Arial; padding: 0pt;"><p style="margin: 0pt; line-height: 1.0; text-align: center;">${reqs.catalog ? 'x' : ''}</p></td>
+                        <td style="text-align: center; font-family: Arial; padding: 0pt;"><p style="margin: 0pt; line-height: 1.0; text-align: center;">${reqs.endUser ? 'x' : ''}</p></td>
+                        <td style="text-align: center; font-family: Arial; padding: 0pt;"><p style="margin: 0pt; line-height: 1.0; text-align: center;">${reqs.iso ? 'x' : ''}</p></td>
                       </tr>
                     `;
                 });
