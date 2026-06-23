@@ -1,6 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import * as xlsx from 'xlsx';
-import { Upload, Plus, Trash2, Image as ImageIcon, X, ZoomIn, ClipboardList, Undo, ArrowUp, ArrowDown, ArrowLeft, ArrowRight } from 'lucide-react';
+import { Upload, Plus, Trash2, Image as ImageIcon, X, ZoomIn, ClipboardList, Undo, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Subscript, Superscript } from 'lucide-react';
+
+const superscriptMap: Record<string, string> = {
+  "0": "⁰", "1": "¹", "2": "²", "3": "³", "4": "⁴", "5": "⁵", "6": "⁶", "7": "⁷", "8": "⁸", "9": "⁹",
+  "+": "⁺", "-": "⁻", "=": "⁼", "(": "⁽", ")": "⁾",
+  "a": "ᵃ", "b": "ᵇ", "c": "ᶜ", "d": "ᵈ", "e": "ᵉ", "f": "ᶠ", "g": "ᵍ", "h": "ʰ", "i": "ⁱ", "j": "ʲ", "k": "ᵏ", "l": "ˡ", "m": "ᵐ", "n": "ⁿ", "o": "ᵒ", "p": "ᵖ", "r": "ʳ", "s": "ˢ", "t": "ᵗ", "u": "ᵘ", "v": "ᵛ", "w": "ʷ", "x": "ˣ", "y": "ʸ", "z": "ᶻ",
+  "A": "ᴬ", "B": "ᴮ", "D": "ᴰ", "E": "ᴱ", "G": "ᴳ", "H": "ᴴ", "I": "ᴵ", "J": "ᴶ", "K": "ᴷ", "L": "ᴸ", "M": "ᴹ", "N": "ᴺ", "O": "ᴼ", "P": "ᴾ", "R": "ᴿ", "T": "ᵀ", "U": "ᵁ", "V": "ⱽ", "W": "ᵂ"
+};
+
+const subscriptMap: Record<string, string> = {
+  "0": "₀", "1": "₁", "2": "₂", "3": "₃", "4": "₄", "5": "₅", "6": "₆", "7": "₇", "8": "₈", "9": "₉",
+  "+": "₊", "-": "₋", "=": "₌", "(": "₍", ")": "₎",
+  "a": "ₐ", "e": "ₑ", "h": "ₕ", "i": "ᵢ", "j": "ⱼ", "k": "ₖ", "l": "ₗ", "m": "ₘ", "n": "ₙ", "o": "ₒ", "p": "ₚ", "r": "ᵣ", "s": "ₛ", "t": "ₜ", "u": "ᵤ", "v": "ᵥ", "x": "ₓ"
+};
+
+const reverseSuperscriptMap: Record<string, string> = Object.fromEntries(Object.entries(superscriptMap).map(([k, v]) => [v, k]));
+const reverseSubscriptMap: Record<string, string> = Object.fromEntries(Object.entries(subscriptMap).map(([k, v]) => [v, k]));
 
 interface ExcelTableProps {
   tableData: string[][];
@@ -150,6 +166,58 @@ export function ExcelTable({ tableData, setTableData, merges, setMerges, rowTags
   
   const [history, setHistory] = useState<{tableData: string[][], rowTags: Record<number, string>}[]>([]);
   const [activeCell, setActiveCell] = useState<{r: number, c: number} | null>(null);
+  
+  const activeTextareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const selectionRef = useRef<{start: number, end: number}>({start: 0, end: 0});
+
+  const applyScript = (type: 'sub' | 'sup') => {
+    if (!activeCell || !activeTextareaRef.current) return;
+    
+    const { start, end } = selectionRef.current;
+    if (start === end) return; // No text selected
+
+    saveHistory(); // Save history before modifying specific cell data
+    
+    const val = activeTextareaRef.current.value;
+    const selected = val.substring(start, end);
+
+    const targetMap = type === 'sub' ? subscriptMap : superscriptMap;
+    const currentReverseMap = type === 'sub' ? reverseSubscriptMap : reverseSuperscriptMap;
+    const oppositeReverseMap = type === 'sub' ? reverseSuperscriptMap : reverseSubscriptMap;
+    
+    // Check if what is selected is ALREADY this script type
+    let isAlreadyTargetScript = false;
+    for (const char of selected) {
+      if (currentReverseMap[char]) {
+        isAlreadyTargetScript = true;
+        break;
+      }
+    }
+
+    let converted = '';
+    
+    if (isAlreadyTargetScript) {
+      // Toggle back to normal text
+      converted = selected.split('').map(char => currentReverseMap[char] || oppositeReverseMap[char] || char).join('');
+    } else {
+      // Convert to target script
+      // First normalize to ensure we aren't converting a script directly to another script without normalizing first
+      const normalized = selected.split('').map(char => reverseSubscriptMap[char] || reverseSuperscriptMap[char] || char).join('');
+      converted = normalized.split('').map(char => targetMap[char] || char).join('');
+    }
+
+    const newValue = val.substring(0, start) + converted + val.substring(end);
+    
+    handleCellChange(activeCell.r, activeCell.c, newValue);
+    
+    // Attempt to re-focus and select the converted text
+    setTimeout(() => {
+      if (activeTextareaRef.current) {
+        activeTextareaRef.current.focus();
+        activeTextareaRef.current.setSelectionRange(start, start + converted.length);
+      }
+    }, 0);
+  };
 
   const saveHistory = () => {
     setHistory(prev => [...prev, { 
@@ -491,7 +559,14 @@ export function ExcelTable({ tableData, setTableData, merges, setMerges, rowTags
           <textarea
             value={cell}
             readOnly={readOnly}
-            onFocus={() => setActiveCell({r: rowIndex, c: colIndex})}
+            onFocus={(e) => {
+              setActiveCell({r: rowIndex, c: colIndex});
+              activeTextareaRef.current = e.target;
+              selectionRef.current = { start: e.target.selectionStart, end: e.target.selectionEnd };
+            }}
+            onSelect={(e) => {
+              selectionRef.current = { start: e.currentTarget.selectionStart, end: e.currentTarget.selectionEnd };
+            }}
             onChange={(e) => handleCellChange(rowIndex, colIndex, e.target.value)}
             onPaste={!readOnly ? (e) => handlePaste(rowIndex, colIndex, e) : undefined}
             className="w-full h-full p-2 bg-transparent outline-none transition-shadow focus:bg-white focus:ring-0 resize-none"
@@ -641,6 +716,27 @@ export function ExcelTable({ tableData, setTableData, merges, setMerges, rowTags
           </div>
           
           <div className="flex gap-1 items-center">
+            {activeCell && (
+              <div className="flex bg-gray-50 text-gray-700 rounded-md border border-gray-200 p-0.5 mr-2 items-center">
+                <button
+                  type="button"
+                  onMouseDown={(e) => { e.preventDefault(); applyScript('sub'); }}
+                  className="p-1.5 hover:bg-gray-200 rounded text-xs font-bold leading-none"
+                  title="Chỉ số dưới (Ví dụ: H₂O)"
+                >
+                  <Subscript size={16} />
+                </button>
+                <div className="w-px bg-gray-300 mx-0.5 h-4"></div>
+                <button
+                  type="button"
+                  onMouseDown={(e) => { e.preventDefault(); applyScript('sup'); }}
+                  className="p-1.5 hover:bg-gray-200 rounded text-xs font-bold leading-none"
+                  title="Chỉ số trên (Ví dụ: m²)"
+                >
+                  <Superscript size={16} />
+                </button>
+              </div>
+            )}
             {activeCell && (
               <div className="flex bg-blue-50 text-blue-700 rounded-md border border-blue-200 p-0.5 mr-2">
                 <button
