@@ -363,30 +363,27 @@ export function PackageBuilder({ savedMaterials, savedPackages, setSavedPackages
               styleWidth = styleWidthMatch[1].trim();
             }
             
-            // Xác định xem ảnh này là ảnh cỡ nhỏ hay ảnh cần giãn to
-            let isSmallImage = false;
             let numericWidth = 0;
             
             if (originalWidthAttr) {
-              numericWidth = parseInt(originalWidthAttr, 10);
-            } else if (styleWidth && styleWidth.includes('px')) {
-              numericWidth = parseInt(styleWidth, 10);
+              // Extract just the digits in case it's something like "500px" or "500"
+              const match = originalWidthAttr.match(/(\d+)/);
+              if (match) numericWidth = parseInt(match[1], 10);
+            } else if (styleWidth) {
+              const match = styleWidth.match(/(\d+)/);
+              if (match) numericWidth = parseInt(match[1], 10);
             }
             
-            if (numericWidth > 0 && numericWidth < 300) {
-              isSmallImage = true;
-            }
-            
-            // Xây dựng Style tương thích xuất sắc cho Word và trình duyệt
             let newStyle = 'display: inline-block; vertical-align: middle; margin: 4.5pt 6pt; ';
             
-            if (isSmallImage) {
-              newStyle += `width: ${numericWidth}px; max-width: 100%; height: auto; `;
-              img.setAttribute('width', String(numericWidth));
+            // Nếu có kích thước cụ thể, áp dụng giới hạn bề ngang của trang Word (khoảng 650px)
+            if (numericWidth > 0) {
+              const finalWidth = Math.min(numericWidth, 650);
+              newStyle += `width: ${finalWidth}px; max-width: 100%; height: auto; `;
+              img.setAttribute('width', String(finalWidth));
               img.removeAttribute('height'); // Để Word tự động scale tỉ lệ chiều cao
             } else {
-              newStyle += 'width: 100%; max-width: 100%; height: auto; ';
-              img.setAttribute('width', '100%');
+              newStyle += 'max-width: 100%; height: auto; ';
               img.removeAttribute('height');
             }
             
