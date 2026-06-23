@@ -262,6 +262,101 @@ export function PackageBuilder({ savedMaterials, savedPackages, setSavedPackages
       <body>
     `;
 
+    // Add Summary Requirements (Báo cáo tóm tắt E-HSMT)
+    contentHtml += `
+      <div style="text-align: center; margin-bottom: 12pt;">
+        <h2 style="font-size: 14pt; margin: 0; text-align: center;">BÁO CÁO TÓM TẮT E-HSMT</h2>
+        <h3 style="font-size: 13pt; font-weight: bold; margin: 0; text-align: center;">E-HSMT: Gói thầu...</h3>
+      </div>
+      <table border="1" cellpadding="0" cellspacing="0" style="margin-bottom: 20pt; width: 100%; border-collapse: collapse;">
+        <thead>
+          <tr>
+            <th style="width: 5%; text-align: center;"><p style="text-align: center; font-weight: bold;">TT</p></th>
+            <th style="width: 25%; text-align: center;"><p style="text-align: center; font-weight: bold;">Nội dung</p></th>
+            <th style="width: 30%; text-align: center;"><p style="text-align: center; font-weight: bold;">Tiêu chuẩn/ Quy định áp dụng để xây dựng HSMT</p></th>
+            <th style="width: 20%; text-align: center;"><p style="text-align: center; font-weight: bold;">So sánh với yêu cầu kỹ thuật của Thiết kế</p></th>
+            <th style="width: 10%; text-align: center;"><p style="text-align: center; font-weight: bold;">Ghi chú</p></th>
+            <th style="width: 10%; text-align: center;"><p style="text-align: center; font-weight: bold;">Cung cấp cho nhu cầu <sup>(1)</sup></p></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="text-align: center; font-weight: bold;"><p style="text-align: center; font-weight: bold;">I.</p></td>
+            <td><p style="font-weight: bold;">Nội dung E-HSMT và Tiêu chuẩn đánh giá HSMT <sup>(1)</sup></p></td>
+            <td style="text-align: center;"><p style="text-align: center;">Thông tư số 79/2025/TT-BTC</p></td>
+            <td></td>
+            <td></td>
+            <td></td>
+          </tr>
+          <tr>
+            <td style="text-align: center; font-weight: bold;"><p style="text-align: center; font-weight: bold;">II.</p></td>
+            <td><p style="font-weight: bold;">Yêu cầu về tài liệu chứng minh nguồn gốc và chất lượng hàng hóa chào <sup>(2)</sup></p></td>
+            <td><p>Yêu cầu cung cấp Catalogue, biên bản thí nghiệm điển hình, Xác nhận của đơn vị sử dụng cuối cùng của hàng hóa khi dự thầu; và yêu cầu bản thí nghiệm xuất xưởng, CO/CQ khi giao hàng (nếu có).</p></td>
+            <td></td>
+            <td></td>
+            <td></td>
+          </tr>
+          <tr>
+            <td style="text-align: center; font-weight: bold;"><p style="text-align: center; font-weight: bold;">III.</p></td>
+            <td><p style="font-weight: bold;">Đặc tính kỹ thuật VTTB yêu cầu trong HSMT <sup>(2)</sup></p></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+          </tr>
+    `;
+
+    selectedMaterials.forEach((mat, index) => {
+      contentHtml += `
+          <tr>
+            <td style="text-align: center;"><p style="text-align: center;">${index + 1}.</p></td>
+            <td><p>${mat.name || ''}</p></td>
+            <td><p>${mat.appliedStandard || ''}</p></td>
+            <td style="text-align: center;"><p style="text-align: center;">Phù hợp yêu cầu kỹ thuật của Thiết kế</p></td>
+            <td></td>
+            <td style="text-align: center;"></td>
+          </tr>
+      `;
+    });
+
+    contentHtml += `
+          <tr>
+            <td style="text-align: center; font-weight: bold;"><p style="text-align: center; font-weight: bold;">IV.</p></td>
+            <td><p style="font-weight: bold;">Nhà thầu/nhà sản xuất có khả năng đáp ứng yêu cầu kỹ thuật của HSMT <sup>(1)</sup></p></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+          </tr>
+        </tbody>
+      </table>
+      <div style="margin-bottom: 20pt;">
+        <p style="font-style: italic; text-decoration: underline; font-weight: bold;">Ghi chú:</p>
+        <p style="font-style: italic;">(1): Nội dung do thành viên thường trực Tổ CGĐT cập nhật;</p>
+        <p style="font-style: italic;">(2): Nội dung do thành viên xây dựng yêu cầu kỹ thuật cập nhật.</p>
+      </div>
+
+      <table border="1" cellpadding="0" cellspacing="0" style="margin-bottom: 40pt; width: 100%; border-collapse: collapse; text-align: center;">
+        <thead>
+          <tr>
+            <th style="width: 25%;"><p style="text-align: center; font-weight: bold;">LẬP BIỂU<br/>(Bộ phận thường trực Tổ CGĐT)</p></th>
+            <th style="width: 25%;"><p style="text-align: center; font-weight: bold;">THÀNH VIÊN XÂY DỰNG YÊU CẦU KỸ THUẬT</p></th>
+            <th style="width: 25%;"><p style="text-align: center; font-weight: bold;">TỔ TRƯỞNG TỔ KỸ THUẬT</p></th>
+            <th style="width: 25%;"><p style="text-align: center; font-weight: bold;">TỔ TRƯỞNG TỔ CGĐT</p></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="height: 80pt;"></td>
+            <td style="height: 80pt;"></td>
+            <td style="height: 80pt;"></td>
+            <td style="height: 80pt;"></td>
+          </tr>
+        </tbody>
+      </table>
+      <br clear="all" style="mso-special-character:line-break;page-break-before:always" />
+    `;
+
     // Add Summary Document Requirements Table
     const hasAnyDocs = selectedMaterials.some(m => {
         const reqs = m.docRequirements || {};

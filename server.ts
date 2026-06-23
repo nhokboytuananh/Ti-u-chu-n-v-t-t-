@@ -93,7 +93,7 @@ async function startServer() {
   // Admin API to save materials
   app.post("/api/materials", requireAuth, async (req: AuthRequest, res) => {
     try {
-      const { id, code, name, content, excelData, images, notes, docRequirements } = req.body;
+      const { id, code, name, content, excelData, images, notes, appliedStandard, docRequirements } = req.body;
       const userEmail = req.user?.email || 'Unknown User';
       
       // Check if material exists to log context correctly
@@ -113,6 +113,7 @@ async function startServer() {
         name: name || '',
         content: content || '',
         notes: notes || '',
+        appliedStandard: appliedStandard || '',
         excelData: excelData || { data: [], merges: [], tags: {} },
         images: images || [],
         docRequirements: docRequirements || {},
@@ -124,6 +125,7 @@ async function startServer() {
           name: name || '',
           content: content || '',
           notes: notes || '',
+          appliedStandard: appliedStandard || '',
           excelData: excelData || { data: [], merges: [], tags: {} },
           images: images || [],
           docRequirements: docRequirements || {},

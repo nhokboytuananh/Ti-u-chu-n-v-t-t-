@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Save, ClipboardList, Database, Info, FileText, Image as ImageIcon, AlignLeft, Plus, Edit2, Trash2, List, FileArchive, Search, X, User, LogOut, Key, Loader2, LayoutDashboard, Settings, Bell, MessageSquare, ChevronDown, Menu } from 'lucide-react';
+import { Save, ClipboardList, Database, Info, FileText, Image as ImageIcon, AlignLeft, Plus, Edit2, Trash2, List, FileArchive, Search, X, User, LogOut, Key, Loader2, LayoutDashboard, Settings, Bell, MessageSquare, ChevronDown, Menu, BookOpen } from 'lucide-react';
 import { RichTextEditor } from './components/RichTextEditor';
 import { ExcelTable } from './components/ExcelTable';
 import { ImageUpload } from './components/ImageUpload';
@@ -132,6 +132,7 @@ export default function App() {
   }]);
   const [images, setImages] = useState<{ url: string; name: string }[]>([]);
   const [notes, setNotes] = useState('');
+  const [appliedStandard, setAppliedStandard] = useState('');
   const [docRequirements, setDocRequirements] = useState({
     typeTest: false,
     catalog: false,
@@ -181,6 +182,7 @@ export default function App() {
       }]);
       setImages([]);
       setNotes('');
+      setAppliedStandard('');
       setDocRequirements({
         typeTest: false,
         catalog: false,
@@ -242,6 +244,7 @@ export default function App() {
       excelData: { tables },
       images,
       notes,
+      appliedStandard: appliedStandard.trim(),
       docRequirements,
     };
     
@@ -286,6 +289,7 @@ export default function App() {
             tables: fetchedTables,
             images: resData.images || [],
             notes: resData.notes || '',
+            appliedStandard: resData.appliedStandard || '',
             docRequirements: resData.docRequirements || {},
             updatedBy: resData.updatedBy,
             updatedAt: resData.updatedAt
@@ -329,6 +333,7 @@ export default function App() {
       }]);
       setImages([]);
       setNotes('');
+      setAppliedStandard('');
       setDocRequirements({
         typeTest: false,
         catalog: false,
@@ -359,6 +364,7 @@ export default function App() {
     }]);
     setImages(material.images || []);
     setNotes(material.notes);
+    setAppliedStandard(material.appliedStandard || '');
     setDocRequirements(material.docRequirements || {
       typeTest: false,
       catalog: false,
@@ -773,18 +779,41 @@ export default function App() {
                   </div>
                 </section>
 
-                {/* Hình ảnh */}
-                {(isEditing || images.length > 0) && (
-                  <section className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                    <div className="px-6 py-4 border-b border-gray-100 bg-gray-50 flex items-center gap-2">
-                      <ImageIcon className="text-blue-500" size={20} />
-                      <h2 className="text-lg font-semibold text-gray-800">Hình ảnh minh họa</h2>
-                    </div>
-                    <div className="p-6">
-                      <ImageUpload images={images} setImages={setImages} readOnly={!isEditing} />
-                    </div>
-                  </section>
-                )}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  {/* Tiêu chuẩn/Quy định áp dụng */}
+                  {(isEditing || appliedStandard.trim()) && (
+                    <section className={`${!(isEditing || images.length > 0) ? 'lg:col-span-3' : 'lg:col-span-1'} bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col`}>
+                      <div className="px-6 py-4 border-b border-gray-100 bg-gray-50 flex items-center gap-2 shrink-0">
+                        <BookOpen className="text-blue-500" size={20} />
+                        <h2 className="text-lg font-semibold text-gray-800">Tiêu chuẩn/ Quy định áp dụng</h2>
+                      </div>
+                      <div className="p-6 flex-1 flex flex-col">
+                        <textarea
+                          id="appliedStandard"
+                          rows={2}
+                          readOnly={!isEditing}
+                          value={appliedStandard}
+                          onChange={e => setAppliedStandard(e.target.value)}
+                          placeholder="Nhập tiêu chuẩn/quy định áp dụng (ví dụ: 178/QĐ-HĐTV...)"
+                          className={`flex-1 w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow text-gray-900 resize-y min-h-[100px] ${!isEditing ? 'bg-gray-50 border-transparent shadow-none px-0 py-0 focus:ring-0 resize-none font-medium' : ''}`}
+                        ></textarea>
+                      </div>
+                    </section>
+                  )}
+
+                  {/* Hình ảnh */}
+                  {(isEditing || images.length > 0) && (
+                    <section className={`${!(isEditing || appliedStandard.trim()) ? 'lg:col-span-3' : 'lg:col-span-2'} bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col`}>
+                      <div className="px-6 py-4 border-b border-gray-100 bg-gray-50 flex items-center gap-2 shrink-0">
+                        <ImageIcon className="text-blue-500" size={20} />
+                        <h2 className="text-lg font-semibold text-gray-800">Hình ảnh minh họa</h2>
+                      </div>
+                      <div className="p-6 flex-1 flex flex-col justify-center">
+                        <ImageUpload images={images} setImages={setImages} readOnly={!isEditing} />
+                      </div>
+                    </section>
+                  )}
+                </div>
 
                 {/* Danh mục tài liệu chứng minh */}
                 {(() => {
