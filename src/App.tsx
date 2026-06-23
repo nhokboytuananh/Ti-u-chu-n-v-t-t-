@@ -874,8 +874,8 @@ export default function App() {
                 )}
 
                 {/* Bảng thông số kỹ thuật */}
-                <section className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                  <div className="px-6 py-4 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
+                <section className="bg-white rounded-xl shadow-sm border border-gray-200">
+                  <div className="px-6 py-4 border-b border-gray-100 bg-gray-50 flex items-center justify-between rounded-t-xl">
                     <div className="flex items-center gap-2">
                        <Database className="text-blue-500" size={20} />
                        <h2 className="text-lg font-semibold text-gray-800">Bảng thông số kỹ thuật chi tiết:</h2>
