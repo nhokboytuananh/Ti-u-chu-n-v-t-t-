@@ -168,13 +168,16 @@ export function ExcelTable({ tableData, setTableData, merges, setMerges, rowTags
   const [activeCell, setActiveCell] = useState<{r: number, c: number} | null>(null);
   
   const activeTextareaRef = useRef<HTMLTextAreaElement | null>(null);
-  const selectionRef = useRef<{start: number, end: number}>({start: 0, end: 0});
 
   const applyScript = (type: 'sub' | 'sup') => {
     if (!activeCell || !activeTextareaRef.current) return;
     
-    const { start, end } = selectionRef.current;
-    if (start === end) return; // No text selected
+    const start = activeTextareaRef.current.selectionStart;
+    const end = activeTextareaRef.current.selectionEnd;
+    if (start === end) {
+       alert("Vui lòng bôi đen (chọn) phần chữ trong ô mà bạn muốn chuyển thành chỉ số.\n\nLưu ý: Chức năng này ưu tiên hiển thị tốt cho các chữ số (0-9) và các chữ cái cơ bản (H2O, m2). Một số ký tự và dấu tiếng Việt có thể không được hỗ trợ định dạng chỉ số.");
+       return;
+    }
 
     saveHistory(); // Save history before modifying specific cell data
     
@@ -562,10 +565,6 @@ export function ExcelTable({ tableData, setTableData, merges, setMerges, rowTags
             onFocus={(e) => {
               setActiveCell({r: rowIndex, c: colIndex});
               activeTextareaRef.current = e.target;
-              selectionRef.current = { start: e.target.selectionStart, end: e.target.selectionEnd };
-            }}
-            onSelect={(e) => {
-              selectionRef.current = { start: e.currentTarget.selectionStart, end: e.currentTarget.selectionEnd };
             }}
             onChange={(e) => handleCellChange(rowIndex, colIndex, e.target.value)}
             onPaste={!readOnly ? (e) => handlePaste(rowIndex, colIndex, e) : undefined}
@@ -670,9 +669,9 @@ export function ExcelTable({ tableData, setTableData, merges, setMerges, rowTags
   }
 
   return (
-    <div className="w-full bg-white rounded-md border border-gray-300 shadow-sm overflow-hidden">
+    <div className="w-full bg-white rounded-md border border-gray-300 shadow-sm relative">
       {!readOnly && (
-        <div className="flex items-center justify-between p-3 border-b border-gray-200 bg-gray-50 flex-wrap gap-2">
+        <div className="sticky top-0 z-20 flex items-center justify-between p-3 border-b border-gray-200 bg-gray-50/95 backdrop-blur flex-wrap gap-2 rounded-t-md shadow-sm">
           <div className="flex items-center gap-3">
             <div className="relative">
               <input
