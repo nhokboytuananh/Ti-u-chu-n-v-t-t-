@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FileDown, GripVertical, CheckSquare, Square, Trash2, Save, FileSpreadsheet, Search, Loader2 } from 'lucide-react';
+import { FileDown, GripVertical, CheckSquare, Square, Trash2, Save, FileSpreadsheet, Search, Loader2, FileText } from 'lucide-react';
 import * as xlsx from 'xlsx';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
@@ -224,7 +224,7 @@ export function PackageBuilder({ savedMaterials, savedPackages, setSavedPackages
     return { data: newExcelData, merges: newMergeRefs };
   };
 
-  const handleExportWord = () => {
+  const handleExportSummaryReport = () => {
     if (selectedIds.length === 0) {
       alert("Vui lòng chọn ít nhất 1 vật tư để xuất file!");
       return;
@@ -236,27 +236,17 @@ export function PackageBuilder({ savedMaterials, savedPackages, setSavedPackages
       <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
       <head>
         <meta charset='utf-8'>
-        <title>${packageName || 'Tieu_Chuan_Goi_Thau'}</title>
+        <title>Bao_Cao_Tom_Tat_${packageName || 'Goi_Thau'}</title>
         <style>
           body { font-family: 'Times New Roman', Times, serif; font-size: 13pt; line-height: 1.15; margin: 0; padding: 0; }
-          h2 { font-size: 16pt; font-weight: bold; margin: 0pt 0pt 6pt 0pt; text-align: left; }
+          h2 { font-size: 14pt; font-weight: bold; margin: 0pt 0pt 6pt 0pt; text-align: center; }
+          h3 { font-size: 13pt; font-weight: bold; margin: 0pt 0pt 12pt 0pt; text-align: center; }
           p { margin: 0pt; mso-margin-top-alt: 0pt; mso-margin-bottom-alt: 0pt; }
-          .rich-text p, .rich-text div, .rich-text li { line-height: 1.15; }
-          ul, ol { margin-top: 0pt; margin-bottom: 0pt; }
-          li { line-height: 1.15; }
           table { width: 100%; border-collapse: collapse; margin: 0pt; mso-table-lspace: 0pt; mso-table-rspace: 0pt; border: 1px solid black; }
           table, th, td { border: 1px solid black; }
-          th, td { padding: 2pt 4pt; mso-padding-alt: 2pt 4pt 2pt 4pt; text-align: left; vertical-align: middle; }
-          th p, td p, th div, td div { margin: 0pt !important; padding: 0pt !important; mso-margin-top-alt: 0pt !important; mso-margin-bottom-alt: 0pt !important; line-height: 1.0 !important; text-align: left; }
-          th { font-weight: bold; background-color: transparent; }
-          .material-section { margin-bottom: 20pt; page-break-inside: avoid; }
-          .rich-text img {
-             display: inline-block !important;
-             vertical-align: middle;
-             margin: 4.5pt 6pt;
-             max-width: 100% !important;
-             height: auto !important;
-          }
+          th, td { padding: 4pt 6pt; mso-padding-alt: 4pt 6pt 4pt 6pt; text-align: left; vertical-align: middle; }
+          th p, td p { margin: 0pt !important; padding: 0pt !important; line-height: 1.1 !important; }
+          th { font-weight: bold; background-color: transparent; text-align: center; }
         </style>
       </head>
       <body>
@@ -266,7 +256,7 @@ export function PackageBuilder({ savedMaterials, savedPackages, setSavedPackages
     contentHtml += `
       <div style="text-align: center; margin-bottom: 12pt;">
         <h2 style="font-size: 14pt; margin: 0; text-align: center;">BÁO CÁO TÓM TẮT E-HSMT</h2>
-        <h3 style="font-size: 13pt; font-weight: bold; margin: 0; text-align: center;">E-HSMT: Gói thầu...</h3>
+        <h3 style="font-size: 13pt; font-weight: bold; margin: 0; text-align: center;">E-HSMT: Gói thầu ${packageName || '...'}</h3>
       </div>
       <table border="1" cellpadding="0" cellspacing="0" style="margin-bottom: 20pt; width: 100%; border-collapse: collapse;">
         <thead>
@@ -354,7 +344,49 @@ export function PackageBuilder({ savedMaterials, savedPackages, setSavedPackages
           </tr>
         </tbody>
       </table>
-      <br clear="all" style="mso-special-character:line-break;page-break-before:always" />
+    `;
+
+    contentHtml += `</body></html>`;
+    const blob = new Blob(['\ufeff', contentHtml], { type: 'application/msword' });
+    saveAs(blob, `Bao_Cao_Tom_Tat_${packageName || 'Goi_Thau'}.doc`);
+  };
+
+  const handleExportWord = () => {
+    if (selectedIds.length === 0) {
+      alert("Vui lòng chọn ít nhất 1 vật tư để xuất file!");
+      return;
+    }
+
+    const selectedMaterials = selectedIds.map(id => savedMaterials.find(m => m.id === id)).filter(Boolean) as Material[];
+
+    let contentHtml = `
+      <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+      <head>
+        <meta charset='utf-8'>
+        <title>${packageName || 'Tieu_Chuan_Goi_Thau'}</title>
+        <style>
+          body { font-family: 'Times New Roman', Times, serif; font-size: 13pt; line-height: 1.15; margin: 0; padding: 0; }
+          h2 { font-size: 16pt; font-weight: bold; margin: 0pt 0pt 6pt 0pt; text-align: left; }
+          p { margin: 0pt; mso-margin-top-alt: 0pt; mso-margin-bottom-alt: 0pt; }
+          .rich-text p, .rich-text div, .rich-text li { line-height: 1.15; }
+          ul, ol { margin-top: 0pt; margin-bottom: 0pt; }
+          li { line-height: 1.15; }
+          table { width: 100%; border-collapse: collapse; margin: 0pt; mso-table-lspace: 0pt; mso-table-rspace: 0pt; border: 1px solid black; }
+          table, th, td { border: 1px solid black; }
+          th, td { padding: 2pt 4pt; mso-padding-alt: 2pt 4pt 2pt 4pt; text-align: left; vertical-align: middle; }
+          th p, td p, th div, td div { margin: 0pt !important; padding: 0pt !important; mso-margin-top-alt: 0pt !important; mso-margin-bottom-alt: 0pt !important; line-height: 1.0 !important; text-align: left; }
+          th { font-weight: bold; background-color: transparent; }
+          .material-section { margin-bottom: 20pt; page-break-inside: avoid; }
+          .rich-text img {
+             display: inline-block !important;
+             vertical-align: middle;
+             margin: 4.5pt 6pt;
+             max-width: 100% !important;
+             height: auto !important;
+          }
+        </style>
+      </head>
+      <body>
     `;
 
     // Add Summary Document Requirements Table
@@ -872,29 +904,43 @@ export function PackageBuilder({ savedMaterials, savedPackages, setSavedPackages
               className="w-full px-3 py-2 border border-gray-300 rounded-md outline-none focus:ring-2 focus:border-blue-500 focus:ring-blue-500 text-sm font-medium"
             />
             
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleExportWord}
+                  disabled={selectedIds.length === 0}
+                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                    selectedIds.length > 0 
+                      ? 'bg-blue-50 border border-blue-200 text-blue-700 hover:bg-blue-100'
+                      : 'bg-gray-100 text-gray-400 cursor-not-allowed border border-transparent'
+                  }`}
+                >
+                  <FileDown size={16} /> Xuất Word (Tiêu chuẩn)
+                </button>
+                
+                <button
+                  onClick={handleExportExcel}
+                  disabled={selectedIds.length === 0}
+                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                    selectedIds.length > 0 
+                      ? 'bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100'
+                      : 'bg-gray-100 text-gray-400 cursor-not-allowed border border-transparent'
+                  }`}
+                >
+                  <FileSpreadsheet size={16} /> Xuất Excel (Bảng TS)
+                </button>
+              </div>
+
               <button
-                onClick={handleExportWord}
+                onClick={handleExportSummaryReport}
                 disabled={selectedIds.length === 0}
-                className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                className={`w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
                   selectedIds.length > 0 
-                    ? 'bg-blue-50 border border-blue-200 text-blue-700 hover:bg-blue-100'
+                    ? 'bg-indigo-50 border border-indigo-200 text-indigo-700 hover:bg-indigo-100'
                     : 'bg-gray-100 text-gray-400 cursor-not-allowed border border-transparent'
                 }`}
               >
-                <FileDown size={16} /> Xuất Word (Tiêu chuẩn)
-              </button>
-              
-              <button
-                onClick={handleExportExcel}
-                disabled={selectedIds.length === 0}
-                className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
-                  selectedIds.length > 0 
-                    ? 'bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100'
-                    : 'bg-gray-100 text-gray-400 cursor-not-allowed border border-transparent'
-                }`}
-              >
-                <FileSpreadsheet size={16} /> Xuất Excel (Bảng TS)
+                <FileText size={16} /> Xuất Báo cáo tóm tắt E-HSMT
               </button>
             </div>
           </div>
