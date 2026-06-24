@@ -17,6 +17,7 @@ async function initDb() {
         name TEXT NOT NULL,
         content TEXT NOT NULL,
         notes TEXT,
+        applied_standard TEXT,
         excel_data JSONB NOT NULL DEFAULT '{"data": [], "merges": [], "tags": {}}'::jsonb,
         images JSONB NOT NULL DEFAULT '[]'::jsonb,
         doc_requirements JSONB,
@@ -31,7 +32,8 @@ async function initDb() {
       ALTER TABLE materials
       ADD COLUMN IF NOT EXISTS excel_data JSONB NOT NULL DEFAULT '{"data": [], "merges": [], "tags": {}}'::jsonb,
       ADD COLUMN IF NOT EXISTS images JSONB NOT NULL DEFAULT '[]'::jsonb,
-      ADD COLUMN IF NOT EXISTS doc_requirements JSONB;
+      ADD COLUMN IF NOT EXISTS doc_requirements JSONB,
+      ADD COLUMN IF NOT EXISTS applied_standard TEXT;
     `);
     await db.execute(`
       CREATE TABLE IF NOT EXISTS material_audit_logs (
