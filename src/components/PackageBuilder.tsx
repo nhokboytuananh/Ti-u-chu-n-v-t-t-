@@ -418,7 +418,11 @@ export function PackageBuilder({ savedMaterials, savedPackages, setSavedPackages
             const tagsSet = new Set<string>();
             const tagNames: Record<string, string> = {};
             if (mat.tables) {
-                mat.tables.forEach(table => {
+                mat.tables.forEach((table, tIdx) => {
+                    const uniqueTableId = table.id || String(tIdx);
+                    const isTableHidden = (packageHiddenTables[mat.id] || []).includes(uniqueTableId);
+                    if (isTableHidden) return;
+
                     if (table.tags && table.data) {
                         Object.entries(table.tags).forEach(([rowStr, tagStr]) => {
                             const rowIndex = parseInt(rowStr, 10);
