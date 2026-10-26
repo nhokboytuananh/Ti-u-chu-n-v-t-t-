@@ -33,3 +33,11 @@ export const packages = pgTable("packages", {
   hiddenTables: jsonb("hidden_tables"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
+
+export const allowedUsers = pgTable("allowed_users", {
+  email: text("email").primaryKey(),
+  role: text("role").default("editor"),
+  addedBy: text("added_by"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+

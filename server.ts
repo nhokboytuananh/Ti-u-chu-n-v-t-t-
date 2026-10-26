@@ -3,7 +3,7 @@ import path from "path";
 import cors from "cors";
 import { createServer as createViteServer } from "vite";
 import { db } from "./src/db/index";
-import { materials, materialAuditLogs, packages } from "./src/db/schema";
+import { materials, materialAuditLogs, packages, allowedUsers } from "./src/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { requireAuth, AuthRequest } from "./src/middleware/auth";
 import crypto from "crypto";
@@ -53,6 +53,14 @@ async function initDb() {
         material_ids JSONB NOT NULL,
         hidden_tags JSONB,
         hidden_tables JSONB,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+    `);
+    await db.execute(`
+      CREATE TABLE IF NOT EXISTS allowed_users (
+        email TEXT PRIMARY KEY,
+        role TEXT DEFAULT 'editor',
+        added_by TEXT,
         created_at TIMESTAMP NOT NULL DEFAULT NOW()
       );
     `);
@@ -313,6 +321,68 @@ async function startServer() {
       res.status(500).json({ error: "Failed to delete package" });
     }
   });
+
+  // Allowed Users API
+  app.get("/api/allowed-users", async (req, res) => {
+    try {
+      let dbUsers: any[] = [];
+      try {
+        dbUsers = await db.select().from(allowedUsers);
+      } catch (e) {
+        console.warn("Could not select allowedUsers:", e);
+      }
+      const envAllowedStr = process.env.VITE_ALLOWED_EMAILS || process.env.ALLOWED_EMAILS || process.env.ADMIN_EMAILS || '';
+      const envEmails = envAllowedStr.split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
+
+      res.json({
+        users: dbUsers,
+        envEmails: envEmails
+      });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Failed to fetch allowed users" });
+    }
+  });
+
+  app.post("/api/allowed-users", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const { email, role } = req.body;
+      if (!email || typeof email !== 'string' || !email.includes('@')) {
+        return res.status(400).json({ error: "Email không hợp lệ" });
+      }
+      const cleanEmail = email.trim().toLowerCase();
+      const addedBy = req.user?.email || 'Admin';
+
+      const data = await db.insert(allowedUsers).values({
+        email: cleanEmail,
+        role: role || 'editor',
+        addedBy: addedBy
+      }).onConflictDoUpdate({
+        target: allowedUsers.email,
+        set: {
+          role: role || 'editor',
+          addedBy: addedBy
+        }
+      }).returning();
+
+      res.json(data[0]);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Failed to add allowed user" });
+    }
+  });
+
+  app.delete("/api/allowed-users/:email", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const cleanEmail = req.params.email.trim().toLowerCase();
+      await db.delete(allowedUsers).where(eq(allowedUsers.email, cleanEmail));
+      res.json({ success: true });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Failed to delete allowed user" });
+    }
+  });
+
 
 
   // Vite middleware for development

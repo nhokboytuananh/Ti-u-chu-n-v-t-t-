@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Save, ClipboardList, Database, Info, FileText, Image as ImageIcon, AlignLeft, Plus, Edit2, Trash2, List, FileArchive, Search, X, User, LogOut, Key, Loader2, LayoutDashboard, Settings, Bell, MessageSquare, ChevronDown, Menu, BookOpen } from 'lucide-react';
+import { Save, ClipboardList, Database, Info, FileText, Image as ImageIcon, AlignLeft, Plus, Edit2, Trash2, List, FileArchive, Search, X, User, LogOut, Key, Loader2, LayoutDashboard, Settings, Bell, MessageSquare, ChevronDown, Menu, BookOpen, UserPlus, ShieldCheck, Mail } from 'lucide-react';
 import { RichTextEditor } from './components/RichTextEditor';
 import { ExcelTable } from './components/ExcelTable';
 import { ImageUpload } from './components/ImageUpload';
@@ -71,19 +71,57 @@ export default function App() {
     }
   };
 
+  // User Access Management State
+  const [showUserAccessModal, setShowUserAccessModal] = useState(false);
+  const [allowedUsersList, setAllowedUsersList] = useState<any[]>([]);
+  const [envEmailsList, setEnvEmailsList] = useState<string[]>([]);
+  const [newUserEmail, setNewUserEmail] = useState('');
+  const [newUserRole, setNewUserRole] = useState<'admin' | 'editor'>('editor');
+  const [isAddingUser, setIsAddingUser] = useState(false);
+  const [accessError, setAccessError] = useState('');
+  const [loadingUsers, setLoadingUsers] = useState(false);
+
+  const fetchAllowedUsers = async () => {
+    setLoadingUsers(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/allowed-users`);
+      if (res.ok) {
+        const data = await res.json();
+        setAllowedUsersList(data.users || []);
+        setEnvEmailsList(data.envEmails || []);
+      }
+    } catch (e) {
+      console.error("Lỗi tải danh sách tài khoản truy cập:", e);
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
   useEffect(() => {
     fetchMaterials();
     fetchPackages();
+    fetchAllowedUsers();
+
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      const allowedEmails = import.meta.env.VITE_ALLOWED_EMAILS;
-      if (currentUser && currentUser.email && allowedEmails && allowedEmails.trim() !== '') {
-        const emailList = allowedEmails.split(',').map((e: string) => e.trim().toLowerCase());
-        if (!emailList.includes(currentUser.email.toLowerCase())) {
-          alert('Tài khoản Google của bạn không có quyền truy cập.');
-          await signOut(auth);
-          setUser(null);
-          setIsLoading(false);
-          return;
+      if (currentUser && currentUser.email) {
+        try {
+          const res = await fetch(`${API_BASE_URL}/api/allowed-users`);
+          if (res.ok) {
+            const data = await res.json();
+            const dbEmails = (data.users || []).map((u: any) => u.email.toLowerCase());
+            const envEmails = (data.envEmails || []).map((e: string) => e.toLowerCase());
+            const allAllowed = Array.from(new Set([...dbEmails, ...envEmails]));
+
+            if (allAllowed.length > 0 && !allAllowed.includes(currentUser.email.toLowerCase())) {
+              alert(`Tài khoản Google (${currentUser.email}) không có quyền truy cập hệ thống.`);
+              await signOut(auth);
+              setUser(null);
+              setIsLoading(false);
+              return;
+            }
+          }
+        } catch (err) {
+          console.warn("Lỗi kiểm tra quyền người dùng:", err);
         }
       }
       setUser(currentUser);
@@ -91,6 +129,65 @@ export default function App() {
     });
     return () => unsubscribe();
   }, []);
+
+  const handleAddAllowedUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newUserEmail.trim() || !newUserEmail.includes('@')) {
+      setAccessError('Vui lòng nhập địa chỉ email hợp lệ!');
+      return;
+    }
+    if (!user) {
+      setShowLoginModal(true);
+      return;
+    }
+    setAccessError('');
+    setIsAddingUser(true);
+    try {
+      const token = await user.getIdToken();
+      const res = await fetch(`${API_BASE_URL}/api/allowed-users`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          email: newUserEmail.trim(),
+          role: newUserRole
+        })
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Lỗi thêm tài khoản');
+      }
+      setNewUserEmail('');
+      await fetchAllowedUsers();
+    } catch (err: any) {
+      setAccessError(err.message || 'Lỗi thêm tài khoản');
+    } finally {
+      setIsAddingUser(false);
+    }
+  };
+
+  const handleDeleteAllowedUser = async (emailToDelete: string) => {
+    if (!user) {
+      setShowLoginModal(true);
+      return;
+    }
+    if (!confirm(`Bạn có chắc muốn xóa quyền truy cập của ${emailToDelete}?`)) return;
+    try {
+      const token = await user.getIdToken();
+      const res = await fetch(`${API_BASE_URL}/api/allowed-users/${encodeURIComponent(emailToDelete)}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (!res.ok) throw new Error('Lỗi xóa tài khoản');
+      await fetchAllowedUsers();
+    } catch (err: any) {
+      alert(err.message || 'Lỗi xóa tài khoản');
+    }
+  };
 
   const handleLogin = async () => {
     try {
@@ -524,6 +621,14 @@ export default function App() {
               <div className="flex items-center gap-3 lg:gap-5">
                  {isAuthenticated ? (
                      <div className="flex items-center gap-3 pl-2 lg:pl-4 border-l border-white/20">
+                         <button 
+                           onClick={() => { setShowUserAccessModal(true); fetchAllowedUsers(); }}
+                           className="flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors text-xs font-semibold"
+                           title="Quản lý danh sách email được truy cập"
+                         >
+                           <UserPlus size={16} />
+                           <span className="hidden sm:inline">Thêm tài khoản</span>
+                         </button>
                          <button onClick={handleLogout} className="flex items-center gap-3 tooltip-trigger hover:opacity-80 transition-opacity" title="Đăng xuất">
                            <img src={auth.currentUser?.photoURL || 'https://api.dicebear.com/7.x/avataaars/svg'} alt="avatar" className="w-9 h-9 rounded-xl bg-white/20 object-cover border border-white/20 shadow-sm" />
                            <div className="text-left hidden lg:block">
@@ -1079,6 +1184,122 @@ export default function App() {
                  })()}
                  </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* User Access Management Modal */}
+      {showUserAccessModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-200">
+            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="text-indigo-600" size={22} />
+                <h3 className="text-lg font-bold text-gray-900">Quản lý quyền truy cập Google</h3>
+              </div>
+              <button 
+                onClick={() => setShowUserAccessModal(false)}
+                className="text-gray-400 hover:text-gray-600 p-1 rounded-lg transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6 max-h-[80vh] overflow-y-auto">
+              <p className="text-xs text-gray-600 leading-relaxed bg-blue-50/80 text-blue-900 p-3 rounded-xl border border-blue-100 flex gap-2">
+                <Info size={18} className="shrink-0 text-blue-600 mt-0.5" />
+                <span>Thêm email Google vào hệ thống để cấp quyền đăng nhập mà không cần cấu hình lại biến môi trường `VITE_ALLOWED_EMAILS`.</span>
+              </p>
+
+              {/* Form thêm email */}
+              <form onSubmit={handleAddAllowedUser} className="space-y-3 bg-gray-50 p-4 rounded-xl border border-gray-100">
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider">Thêm email mới</label>
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <Mail className="absolute left-3 top-2.5 text-gray-400" size={16} />
+                    <input 
+                      type="email"
+                      value={newUserEmail}
+                      onChange={(e) => setNewUserEmail(e.target.value)}
+                      placeholder="vd: user@gmail.com"
+                      className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none bg-white"
+                      required
+                    />
+                  </div>
+                  <select
+                    value={newUserRole}
+                    onChange={(e: any) => setNewUserRole(e.target.value)}
+                    className="px-2 py-2 text-sm rounded-lg border border-gray-300 bg-white font-medium text-gray-700 outline-none focus:ring-2 focus:ring-indigo-500"
+                  >
+                    <option value="editor">Biên tập</option>
+                    <option value="admin">Quản trị</option>
+                  </select>
+                  <button
+                    type="submit"
+                    disabled={isAddingUser}
+                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm rounded-lg shadow-sm transition-colors flex items-center gap-1.5 disabled:opacity-50 shrink-0"
+                  >
+                    {isAddingUser ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
+                    <span>Thêm</span>
+                  </button>
+                </div>
+                {accessError && <p className="text-xs font-semibold text-red-600">{accessError}</p>}
+              </form>
+
+              {/* Danh sách email đã cấp quyền từ CSDL */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Tài khoản được thêm từ CSDL ({allowedUsersList.length})</h4>
+                  {loadingUsers && <Loader2 size={14} className="animate-spin text-gray-400" />}
+                </div>
+
+                {allowedUsersList.length === 0 ? (
+                  <p className="text-xs text-gray-400 italic text-center py-2">Chưa có tài khoản nào trong CSDL.</p>
+                ) : (
+                  <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                    {allowedUsersList.map((u) => (
+                      <div key={u.email} className="flex items-center justify-between p-2.5 bg-white border border-gray-200 rounded-xl text-sm hover:border-gray-300 transition-colors">
+                        <div className="overflow-hidden pr-2">
+                          <p className="font-semibold text-gray-800 truncate text-xs">{u.email}</p>
+                          <p className="text-[10px] text-gray-400">Thêm bởi {u.addedBy || 'Admin'} • {u.role === 'admin' ? 'Quản trị' : 'Biên tập'}</p>
+                        </div>
+                        <button
+                          onClick={() => handleDeleteAllowedUser(u.email)}
+                          className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors shrink-0"
+                          title="Xóa quyền truy cập"
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Danh sách email cấu hình từ biến môi trường (read-only) */}
+              {envEmailsList.length > 0 && (
+                <div className="space-y-2 pt-2 border-t border-gray-100">
+                  <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Cấu hình qua Biến môi trường ENV ({envEmailsList.length})</h4>
+                  <div className="flex flex-wrap gap-1.5">
+                    {envEmailsList.map((email) => (
+                      <span key={email} className="text-xs bg-gray-100 text-gray-600 px-2.5 py-1 rounded-md font-mono border border-gray-200">
+                        {email}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="px-6 py-3 bg-gray-50 border-t border-gray-100 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setShowUserAccessModal(false)}
+                className="px-4 py-2 text-sm font-semibold text-gray-700 bg-white border border-gray-300 hover:bg-gray-100 rounded-lg shadow-sm transition-colors"
+              >
+                Đóng
+              </button>
             </div>
           </div>
         </div>
